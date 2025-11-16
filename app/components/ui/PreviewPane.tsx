@@ -792,7 +792,7 @@ export default function PreviewPane({
                 {batchPreview.map((b) => (
                   <li key={`batch-${b.batch}`} className="px-3 py-2">
                     <div className="font-medium">Batch {b.batch}</div>
-                    <div className="text-gray-700 break-words">
+                    <div className="text-gray-700 wrap-break-word">
                       {b.recipients.join(", ")}
                     </div>
                   </li>
@@ -913,7 +913,7 @@ export default function PreviewPane({
                         <span className="min-w-[60px] inline-block">
                           Batch {b.batch}:
                         </span>
-                        <span className="flex-1 break-words">
+                        <span className="flex-1 wrap-break-word">
                           {b.recipients.join(", ")}
                         </span>
                       </div>
@@ -948,7 +948,7 @@ export default function PreviewPane({
                   <tbody>
                     {sendModalLogs.map((l, i) => (
                       <tr key={i} className="odd:bg-white even:bg-gray-50">
-                        <td className="px-2 py-1 border whitespace-pre-wrap break-words">
+                        <td className="px-2 py-1 border whitespace-pre-wrap wrap-break-word">
                           {l.to}
                         </td>
                         <td
@@ -960,12 +960,12 @@ export default function PreviewPane({
                         >
                           {l.status}
                         </td>
-                        <td className="px-2 py-1 border whitespace-pre-wrap break-words">
+                        <td className="px-2 py-1 border whitespace-pre-wrap wrap-break-word">
                           {l.timestamp
                             ? new Date(l.timestamp).toLocaleTimeString()
                             : ""}
                         </td>
-                        <td className="px-2 py-1 border whitespace-pre-wrap break-words">
+                        <td className="px-2 py-1 border whitespace-pre-wrap wrap-break-word">
                           {l.subject || ""}
                         </td>
                         <td className="px-2 py-1 border">
@@ -973,7 +973,7 @@ export default function PreviewPane({
                             ? l.attachments
                             : ""}
                         </td>
-                        <td className="px-2 py-1 border whitespace-pre-wrap break-words">
+                        <td className="px-2 py-1 border whitespace-pre-wrap wrap-break-word">
                           {l.error || l.messageId || ""}
                         </td>
                       </tr>

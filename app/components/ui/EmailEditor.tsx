@@ -11,14 +11,18 @@ type Props = {
   variables?: string[];
 };
 
-const sanitize = (html: string) => DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
+const sanitize = (html: string) =>
+  DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
 
 export type EmailEditorHandle = {
   insertVariable: (name: string) => void;
   focus: () => void;
 };
 
-function EmailEditorInner({ value, onChange }: Props, refForward: React.Ref<EmailEditorHandle>) {
+function EmailEditorInner(
+  { value, onChange }: Props,
+  refForward: React.Ref<EmailEditorHandle>
+) {
   const ref = useRef<HTMLDivElement | null>(null);
 
   // Keep the editor content in sync only when the external value changes.
@@ -63,12 +67,42 @@ function EmailEditorInner({ value, onChange }: Props, refForward: React.Ref<Emai
     <div className="space-y-2">
       {/* Formatting toolbar only; variable insertion controlled externally to prevent overflow */}
       <div className="flex gap-2 pb-1 overflow-x-auto max-w-full editor-toolbar">
-        <div className="inline-flex items-center gap-1 flex-shrink-0">
-          <button type="button" className="px-2 py-1 border rounded text-xs" onClick={() => exec("bold")}>Bold</button>
-          <button type="button" className="px-2 py-1 border rounded text-xs" onClick={() => exec("italic")}>Italic</button>
-          <button type="button" className="px-2 py-1 border rounded text-xs" onClick={() => exec("underline")}>Underline</button>
-          <button type="button" className="px-2 py-1 border rounded text-xs" onClick={() => exec("insertUnorderedList")}>• List</button>
-          <button type="button" className="px-2 py-1 border rounded text-xs" onClick={() => exec("insertOrderedList")}>1. List</button>
+        <div className="inline-flex items-center gap-1 shrink-0">
+          <button
+            type="button"
+            className="px-2 py-1 border rounded text-xs"
+            onClick={() => exec("bold")}
+          >
+            Bold
+          </button>
+          <button
+            type="button"
+            className="px-2 py-1 border rounded text-xs"
+            onClick={() => exec("italic")}
+          >
+            Italic
+          </button>
+          <button
+            type="button"
+            className="px-2 py-1 border rounded text-xs"
+            onClick={() => exec("underline")}
+          >
+            Underline
+          </button>
+          <button
+            type="button"
+            className="px-2 py-1 border rounded text-xs"
+            onClick={() => exec("insertUnorderedList")}
+          >
+            • List
+          </button>
+          <button
+            type="button"
+            className="px-2 py-1 border rounded text-xs"
+            onClick={() => exec("insertOrderedList")}
+          >
+            1. List
+          </button>
         </div>
       </div>
 
