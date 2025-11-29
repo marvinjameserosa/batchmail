@@ -2,10 +2,17 @@
 
 import nunjucks from "nunjucks";
 import Image from "next/image";
-import { useCallback, useMemo, useEffect, useState } from "react";
+import {
+  useCallback,
+  useMemo,
+  useEffect,
+  useState,
+  useRef,
+} from "react";
 import type { CsvMapping, ParsedCsv } from "./CsvUploader";
 // email editing is performed in the Template tab
 import type { AttachIndex } from "./AttachmentsUploader";
+import VariablePicker from "./VariablePicker";
 
 type Props = {
   csv: ParsedCsv | null;
@@ -64,6 +71,7 @@ export default function PreviewPane({
   const [pasteValue, setPasteValue] = useState("");
   const [uploading, setUploading] = useState(false);
   const [overrideApplied, setOverrideApplied] = useState(false);
+  const subjectInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -136,11 +144,45 @@ export default function PreviewPane({
       .map((r) => String(r[mapping.recipient]));
   }, [csv, mapping]);
 
+  const requiresSingleBatch = useMemo(() => {
+    if (!attachmentsByName) return false;
+    const min = 1024 * 1024;
+    const max = 2 * 1024 * 1024;
+    return Object.values(attachmentsByName).some((entries) =>
+      Array.isArray(entries)
+        ? entries.some((entry) => {
+            if (!entry) return false;
+            const size = entry.sizeBytes ?? 0;
+            const filename = entry.filename?.toLowerCase() || "";
+            const mime = (entry.contentType || "").toLowerCase();
+            const isPdf = mime.includes("pdf") || filename.endsWith(".pdf");
+            return Boolean(isPdf && size >= min && size <= max);
+          })
+        : false
+    );
+  }, [attachmentsByName]);
+
+  const attachmentsPresent = useMemo(() => {
+    if (!attachmentsByName) return false;
+    return Object.values(attachmentsByName).some(
+      (arr) => Array.isArray(arr) && arr.length > 0
+    );
+  }, [attachmentsByName]);
+
+  const maxBatchSize = requiresSingleBatch ? 1 : attachmentsPresent ? 3 : 4;
+  const limitedToThree = !requiresSingleBatch && attachmentsPresent;
+
+  useEffect(() => {
+    if (batchSize > maxBatchSize) {
+      setBatchSize(maxBatchSize);
+    }
+  }, [maxBatchSize, batchSize]);
+
   // Preview batches (size = batchSize) so user can see grouping before sending
   const batchPreview = useMemo(() => {
     const list: Array<{ batch: number; recipients: string[] }> = [];
     if (!recipients || recipients.length === 0) return list;
-    const SIZE = batchSize === 3 ? 3 : 4; // enforce only 3 or 4
+    const SIZE = Math.max(1, Math.min(batchSize, maxBatchSize));
     for (let i = 0; i < recipients.length; i += SIZE) {
       list.push({
         batch: i / SIZE + 1,
@@ -148,7 +190,7 @@ export default function PreviewPane({
       });
     }
     return list;
-  }, [recipients, batchSize]);
+  }, [recipients, batchSize, maxBatchSize]);
 
   const availableVars = useMemo(() => {
     const s = new Set<string>();
@@ -160,6 +202,23 @@ export default function PreviewPane({
     return Array.from(s);
   }, [csv, mapping]);
 
+  const attachmentsByRecipient = useMemo(() => {
+    if (!csv || !mapping || !attachmentsByName) return new Map<string, string[]>();
+    const map = new Map<string, string[]>();
+    for (const row of csv.rows as Array<Record<string, string>>) {
+      const email = row[mapping.recipient];
+      const nameVal = row[mapping.name];
+      if (!email || !nameVal) continue;
+      const normalized = nameVal.toString().trim().toLowerCase();
+      const entries = attachmentsByName[normalized];
+      if (!entries || entries.length === 0) continue;
+      const files = entries
+        .filter(Boolean)
+        .map((entry) => entry.filename || "Attachment");
+      if (files.length > 0) map.set(String(email), files);
+    }
+    return map;
+  }, [csv, mapping, attachmentsByName]);
   const usedSubjectVars = useMemo(() => {
     const vars = new Set<string>();
     const re = /\{\{\s*([a-zA-Z_][\w\.]*)\s*\}\}/g;
@@ -183,6 +242,29 @@ export default function PreviewPane({
   const invalidUsed = useMemo(
     () => allUsed.filter((v) => !availableVars.includes(v)),
     [allUsed, availableVars]
+  );
+
+  const insertSubjectVariable = useCallback(
+    (variable: string) => {
+      if (!onSubjectChange) return;
+      const addition = `{{ ${variable} }}`;
+      const value = subjectTemplate ?? "";
+      const input = subjectInputRef.current;
+      if (!input) {
+        onSubjectChange(`${value}${addition}`);
+        return;
+      }
+      const start = input.selectionStart ?? value.length;
+      const end = input.selectionEnd ?? value.length;
+      const next = value.slice(0, start) + addition + value.slice(end);
+      onSubjectChange(next);
+      requestAnimationFrame(() => {
+        input.focus();
+        const caret = start + addition.length;
+        input.setSelectionRange(caret, caret);
+      });
+    },
+    [onSubjectChange, subjectTemplate]
   );
 
   const variantLabel = useMemo(
@@ -213,7 +295,7 @@ export default function PreviewPane({
     if (!ready || !csv || !mapping) return;
     const allRows = csv.rows.filter((r) => r[mapping.recipient]);
     const total = allRows.length;
-    const BATCH_SIZE = batchSize === 3 ? 3 : 4; // constrain
+    const BATCH_SIZE = Math.max(1, Math.min(batchSize, maxBatchSize));
     setShowSendModal(true);
     setSendModalLogs([]);
     setSendModalSummary({ sent: 0, failed: 0 });
@@ -668,10 +750,16 @@ export default function PreviewPane({
               <div className="text-sm font-medium">Subject</div>
               <div className="flex items-center gap-2">
                 <input
+                  ref={subjectInputRef}
                   value={subjectTemplate}
                   onChange={(e) => onSubjectChange?.(e.target.value)}
                   placeholder="e.g. Hello {{ name }}"
                   className="flex-1 rounded border px-3 py-2 text-sm"
+                />
+                <VariablePicker
+                  variables={availableVars}
+                  label="Insert variable"
+                  onInsert={(v) => insertSubjectVariable(v)}
                 />
               </div>
               {allUsed.length > 0 && (
@@ -743,46 +831,50 @@ export default function PreviewPane({
               </span>
             </div>
             {/* Batch size selector */}
-            <div className="flex items-center gap-3 text-xs">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3 text-xs flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="opacity-70">Batch size:</span>
-                <label className="inline-flex items-center gap-1 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="batchSize"
-                    value={3}
-                    checked={batchSize === 3}
-                    onChange={() => setBatchSize(3)}
-                    className="accent-gray-800"
-                  />
-                  <span>3</span>
-                </label>
-                <label className="inline-flex items-center gap-1 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="batchSize"
-                    value={4}
-                    checked={batchSize === 4}
-                    onChange={() => setBatchSize(4)}
-                    className="accent-gray-800"
-                  />
-                  <span>4</span>
-                </label>
+                {[1, 3, 4].map((size) => {
+                  const disabled =
+                    (requiresSingleBatch && size !== 1) ||
+                    (limitedToThree && size === 4);
+                  return (
+                    <label
+                      key={size}
+                      className={`inline-flex items-center gap-1 cursor-pointer ${
+                        disabled ? "opacity-40 cursor-not-allowed" : ""
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="batchSize"
+                        value={size}
+                        checked={batchSize === size}
+                        onChange={() => setBatchSize(size)}
+                        className="accent-gray-800"
+                        disabled={disabled}
+                      />
+                      <span>{size}</span>
+                    </label>
+                  );
+                })}
               </div>
               <div className="text-[11px] text-gray-600">
-                {attachmentsByName &&
-                Object.values(attachmentsByName).some(
-                  (arr) => Array.isArray(arr) && arr.length > 0
-                ) ? (
+                {requiresSingleBatch ? (
+                  <span className="text-yellow-800">
+                    Large 1-2 MB PDF attachments detected. Sending is locked
+                    to 1 email per batch.
+                  </span>
+                ) : attachmentsPresent ? (
                   <span>
-                    <strong>Tip:</strong> Attachments detected. Prefer{" "}
-                    <strong>3 per batch</strong> to stay under function time
-                    limits.
+                    <strong>Tip:</strong> Attachments detected. Sending is
+                    capped at <strong>3 per batch</strong> to reduce payload
+                    size.
                   </span>
                 ) : (
                   <span>
-                    <strong>Tip:</strong> No attachments detected. You can use{" "}
-                    <strong>4 per batch</strong> for faster overall sending.
+                    <strong>Tip:</strong> No attachments detected. You can use
+                    <strong> 4 per batch</strong> for faster overall sending.
                   </span>
                 )}
               </div>
@@ -790,10 +882,35 @@ export default function PreviewPane({
             <div className="max-h-48 overflow-auto text-xs bg-gray-50 border rounded">
               <ul className="divide-y">
                 {batchPreview.map((b) => (
-                  <li key={`batch-${b.batch}`} className="px-3 py-2">
+                  <li key={`batch-${b.batch}`} className="px-3 py-2 space-y-1">
                     <div className="font-medium">Batch {b.batch}</div>
-                    <div className="text-gray-700 wrap-break-word">
-                      {b.recipients.join(", ")}
+                    <div className="text-gray-700 space-y-1">
+                      {b.recipients.map((email) => {
+                        const attachments = attachmentsByRecipient.get(email) || [];
+                        return (
+                          <div
+                            key={`${b.batch}-${email}`}
+                            className="flex flex-wrap gap-1 items-center"
+                          >
+                            <span className="wrap-break-word">{email}</span>
+                            {attachments.length > 0 && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 border rounded bg-white">
+                                📎
+                                <span>
+                                  {attachments.length} file
+                                  {attachments.length > 1 ? "s" : ""}
+                                </span>
+                                <span className="text-gray-500">
+                                  ({attachments.slice(0, 2).join(", ")}
+                                  {attachments.length > 2
+                                    ? ` +${attachments.length - 2}`
+                                    : ""})
+                                </span>
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </li>
                 ))}

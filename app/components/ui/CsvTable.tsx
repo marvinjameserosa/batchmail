@@ -114,13 +114,6 @@ export default function CsvTable({ csv, mapping, onMappingChange, onChange }: Pr
         </label>
         <button
           type="button"
-          onClick={() => setShowAddCol((v) => !v)}
-          className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium shadow-sm hover:bg-gray-50"
-        >
-          {showAddCol ? "Cancel" : "Add Column"}
-        </button>
-        <button
-          type="button"
           onClick={downloadCsv}
           className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium shadow-sm hover:bg-gray-50"
         >
@@ -166,22 +159,31 @@ export default function CsvTable({ csv, mapping, onMappingChange, onChange }: Pr
                 </th>
               ))}
               <th className="px-3 py-2 border text-left font-semibold bg-gray-50">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const blank: Record<string, string> = {};
-                    csv.headers.forEach((h) => (blank[h] = ""));
-                    const updated: ParsedCsv = {
-                      ...csv,
-                      rows: [...csv.rows, blank],
-                      rowCount: (csv.rowCount || 0) + 1,
-                    };
-                    onChange?.(updated);
-                  }}
-                  className="text-[11px] px-2 py-1 rounded border bg-white hover:bg-gray-100"
-                >
-                  + Row
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddCol((v) => !v)}
+                    className="text-[11px] px-2 py-1 rounded border bg-white hover:bg-gray-100"
+                  >
+                    {showAddCol ? "Cancel" : "+ Column"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const blank: Record<string, string> = {};
+                      csv.headers.forEach((h) => (blank[h] = ""));
+                      const updated: ParsedCsv = {
+                        ...csv,
+                        rows: [...csv.rows, blank],
+                        rowCount: (csv.rowCount || 0) + 1,
+                      };
+                      onChange?.(updated);
+                    }}
+                    className="text-[11px] px-2 py-1 rounded border bg-white hover:bg-gray-100"
+                  >
+                    + Row
+                  </button>
+                </div>
               </th>
             </tr>
           </thead>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { KeyboardEvent, Dispatch, SetStateAction } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import EmailEditor, { EmailEditorHandle } from "./EmailEditor";
 import VariablePicker from "./VariablePicker";
@@ -59,7 +60,9 @@ export default function TemplateLibrary({
   const [serverTemplates, setServerTemplates] = useState<string[]>([]);
   const active = templates.find((t) => t.id === activeId) || templates[0];
   const [rawMode, setRawMode] = useState(false);
+  const [rawZoom, setRawZoom] = useState(1);
   const editorRef = useRef<EmailEditorHandle | null>(null);
+  const rawTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [applied, setApplied] = useState<boolean>(false);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -246,7 +249,21 @@ export default function TemplateLibrary({
             <button
               type="button"
               className="px-3 py-1 rounded border text-sm bg-white hover:bg-gray-50"
-              onClick={() => setRawMode((v) => !v)}
+              onClick={() =>
+                setRawMode((v) => {
+                  const next = !v;
+                  if (!v) {
+                    const formatted = formatHtml(active.html);
+                    if (formatted && formatted !== active.html) {
+                      updateActive({ html: formatted });
+                    }
+                  }
+                  if (v) {
+                    setRawZoom(1);
+                  }
+                  return next;
+                })
+              }
             >
               {rawMode ? "WYSIWYG" : "Edit HTML"}
             </button>
@@ -318,16 +335,168 @@ export default function TemplateLibrary({
               onChange={(html) => updateActive({ html })}
             />
           ) : (
-            <textarea
-              value={active.html}
-              onChange={(e) => updateActive({ html: e.target.value })}
-              rows={18}
-              className="email-editor-surface w-full border rounded p-3 text-sm font-mono bg-white"
-            />
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs text-slate-200">
+                <span className="opacity-60">Zoom</span>
+                <div className="inline-flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => adjustRawZoom(-0.1, setRawZoom)}
+                    className="px-2 py-0.5 rounded border border-slate-700 bg-slate-900 hover:bg-slate-800"
+                    disabled={rawZoom <= RAW_ZOOM_MIN}
+                  >
+                    -
+                  </button>
+                  <span className="w-16 text-center">
+                    {(rawZoom * 100).toFixed(0)}%
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => adjustRawZoom(0.1, setRawZoom)}
+                    className="px-2 py-0.5 rounded border border-slate-700 bg-slate-900 hover:bg-slate-800"
+                    disabled={rawZoom >= RAW_ZOOM_MAX}
+                  >
+                    +
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRawZoom(1)}
+                    className="ml-1 px-2 py-0.5 rounded border border-slate-700 bg-slate-900 hover:bg-slate-800"
+                    disabled={Math.abs(rawZoom - 1) < 0.05}
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
+              <div className="relative">
+              <textarea
+                ref={rawTextareaRef}
+                value={active.html}
+                onChange={(e) => updateActive({ html: e.target.value })}
+                onKeyDown={(e) => handleRawKeyDown(e, active.html, updateActive)}
+                rows={22}
+                spellCheck={false}
+                  className="w-full min-h-[26rem] rounded-lg border border-slate-800 bg-slate-950 text-slate-100 font-mono shadow-inner focus:outline-none focus:ring-2 focus:ring-green-500 px-4 py-4"
+                  style={{
+                    fontSize: `${(rawZoom * BASE_RAW_FONT_SIZE).toFixed(2)}px`,
+                    lineHeight: `${(rawZoom * BASE_RAW_LINE_HEIGHT).toFixed(2)}px`,
+                  }}
+              />
+              <div className="pointer-events-none absolute top-2 right-3 text-[11px] uppercase tracking-wide text-slate-500">
+                HTML
+              </div>
+              </div>
+            </div>
           )}
           {/* Actions moved to header for visibility */}
         </div>
       </div>
     </div>
   );
+}
+
+const BASE_RAW_FONT_SIZE = 14;
+const BASE_RAW_LINE_HEIGHT = 22;
+const RAW_ZOOM_MIN = 0.7;
+const RAW_ZOOM_MAX = 1.6;
+
+const VOID_TAGS = new Set([
+  "area",
+  "base",
+  "br",
+  "col",
+  "embed",
+  "hr",
+  "img",
+  "input",
+  "link",
+  "meta",
+  "param",
+  "source",
+  "track",
+  "wbr",
+]);
+
+function formatHtml(input: string) {
+  const raw = input ?? "";
+  if (!raw.trim()) return raw;
+  try {
+    const tokens = raw
+      .replace(/>\s+</g, "><")
+      .split(/(<[^>]+>)/g)
+      .map((token) => token)
+      .filter((token) => token && token.trim().length > 0);
+    let depth = 0;
+    const lines: string[] = [];
+    tokens.forEach((token) => {
+      const trimmed = token.trim();
+      const isTag = trimmed.startsWith("<") && trimmed.endsWith(">");
+      if (!isTag) {
+        lines.push(`${"  ".repeat(depth)}${trimmed}`);
+        return;
+      }
+      const isComment = trimmed.startsWith("<!--");
+      const closing = /^<\//.test(trimmed);
+      const tagMatch = trimmed.match(/^<\/?\s*([^\s>/]+)/);
+      const tagName = tagMatch?.[1]?.toLowerCase() ?? "";
+      const selfClosing = /\/>$/.test(trimmed) || VOID_TAGS.has(tagName);
+      if (closing && !selfClosing) {
+        depth = Math.max(depth - 1, 0);
+      }
+      lines.push(`${"  ".repeat(depth)}${trimmed}`);
+      if (!closing && !selfClosing && !isComment) {
+        depth += 1;
+      }
+    });
+    return lines.join("\n");
+  } catch {
+    return raw;
+  }
+}
+
+function handleRawKeyDown(
+  e: KeyboardEvent<HTMLTextAreaElement>,
+  currentValue: string,
+  update: (patch: Partial<SavedTemplate>) => void
+) {
+  if (e.key !== "Tab") return;
+  e.preventDefault();
+  const textarea = e.currentTarget;
+  const start = textarea.selectionStart ?? 0;
+  const end = textarea.selectionEnd ?? 0;
+  const insert = "  ";
+  let nextValue = currentValue;
+  let caret = start;
+  if (e.shiftKey) {
+    const before = currentValue.slice(0, start);
+    if (before.endsWith(insert)) {
+      const newStart = start - insert.length;
+      nextValue =
+        currentValue.slice(0, newStart) + currentValue.slice(end);
+      caret = newStart;
+    }
+  } else {
+    nextValue =
+      currentValue.slice(0, start) + insert + currentValue.slice(end);
+    caret = start + insert.length;
+  }
+  if (nextValue === currentValue) return;
+  update({ html: nextValue });
+  requestAnimationFrame(() => {
+    textarea.selectionStart = caret;
+    textarea.selectionEnd = caret;
+  });
+}
+
+function adjustRawZoom(
+  delta: number,
+  setZoom: Dispatch<SetStateAction<number>>
+) {
+  setZoom((prev) => {
+    const next = Math.min(
+      RAW_ZOOM_MAX,
+      Math.max(RAW_ZOOM_MIN, parseFloat((prev + delta).toFixed(2)))
+    );
+    return next;
+  });
 }

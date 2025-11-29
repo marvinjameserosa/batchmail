@@ -1,9 +1,14 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import type { ParsedCsv, CsvMapping } from "./CsvUploader";
 
-export type AttachmentEntry = { filename: string; contentBase64: string; contentType?: string };
+export type AttachmentEntry = {
+  filename: string;
+  contentBase64: string;
+  contentType?: string;
+  sizeBytes?: number;
+};
 export type AttachIndex = Record<string, AttachmentEntry[]>; // key: normalized name (lowercase, trimmed)
 
 type Props = {
@@ -14,6 +19,7 @@ type Props = {
 };
 
 export default function AttachmentsUploader({ csv, mapping, value, onChange }: Props) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   const normalize = useCallback((s: string) => s.trim().toLowerCase(), []);
   const fileBaseName = useCallback((name: string) => {
@@ -37,6 +43,23 @@ export default function AttachmentsUploader({ csv, mapping, value, onChange }: P
     return { files, matched, unmatched: files - matched, unmatchedFiles: unmatched };
   }, [value, rowsNameSet]);
 
+  const largePdfDetected = useMemo(() => {
+    const min = 1024 * 1024;
+    const max = 2 * 1024 * 1024;
+    return Object.values(value).some((arr) =>
+      Array.isArray(arr)
+        ? arr.some((entry) => {
+            if (!entry) return false;
+            const size = entry.sizeBytes ?? 0;
+            const filename = entry.filename?.toLowerCase() || "";
+            const mime = (entry.contentType || "").toLowerCase();
+            const isPdf = mime.includes("pdf") || filename.endsWith(".pdf");
+            return Boolean(isPdf && size >= min && size <= max);
+          })
+        : false
+    );
+  }, [value]);
+
   const fileToBase64 = (file: File) => new Promise<string>((resolve, reject) => {
     const fr = new FileReader();
     fr.onload = () => {
@@ -48,23 +71,32 @@ export default function AttachmentsUploader({ csv, mapping, value, onChange }: P
     fr.readAsDataURL(file);
   });
 
-  const onUpload = async (files: FileList | null) => {
+  const onUpload = async (files: FileList | null, source?: HTMLInputElement | null) => {
     if (!files || files.length === 0) return;
     const next: AttachIndex = { ...value };
     for (const f of Array.from(files)) {
       try {
         const contentBase64 = await fileToBase64(f);
         const key = normalize(fileBaseName(f.name));
-        const entry: AttachmentEntry = { filename: f.name, contentBase64, contentType: f.type || undefined };
+        const entry: AttachmentEntry = {
+          filename: f.name,
+          contentBase64,
+          contentType: f.type || undefined,
+          sizeBytes: typeof f.size === "number" ? f.size : undefined,
+        };
         next[key] = [...(next[key] || []), entry];
       } catch {
         // ignore failed file
       }
     }
     onChange(next);
+    if (source) source.value = "";
   };
 
-  const clearAll = () => onChange({});
+  const clearAll = () => {
+    onChange({});
+    if (inputRef.current) inputRef.current.value = "";
+  };
 
   return (
     <div className="rounded-lg border p-4 space-y-3">
@@ -75,7 +107,13 @@ export default function AttachmentsUploader({ csv, mapping, value, onChange }: P
         </div>
         <div className="flex items-center gap-2">
           <label className="px-3 py-1 rounded border text-sm bg-white text-gray-900 hover:bg-gray-50 cursor-pointer">
-            <input type="file" multiple className="hidden" onChange={(e) => onUpload(e.target.files)} />
+            <input
+              ref={inputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={(e) => onUpload(e.target.files, e.target)}
+            />
             Choose files…
           </label>
           <button type="button" onClick={clearAll} disabled={computed.files === 0} className="px-3 py-1 rounded border text-sm bg-white hover:bg-gray-50 disabled:opacity-50">Clear</button>
@@ -97,6 +135,12 @@ export default function AttachmentsUploader({ csv, mapping, value, onChange }: P
             {computed.unmatchedFiles.length > 30 && <li>…and {computed.unmatchedFiles.length - 30} more</li>}
           </ul>
         </details>
+      )}
+
+      {largePdfDetected && (
+        <div className="text-xs text-yellow-800 bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
+          Large 1-2 MB PDF attachments detected. Batch sending will be limited to 1 email per send to stay under attachment limits.
+        </div>
       )}
     </div>
   );

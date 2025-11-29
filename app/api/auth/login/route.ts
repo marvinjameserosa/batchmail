@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { AUTH_COOKIE, AUTH_COOKIE_BASE, AUTH_MAX_AGE_SECONDS, isSecureCookie } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 
@@ -28,7 +29,11 @@ export async function POST(req: Request) {
   }
   const token = crypto.randomBytes(32).toString('hex');
   const res = NextResponse.json({ ok:true });
-  const secure = process.env.NODE_ENV === 'production';
-  res.cookies.set('batchmail_auth', token, { httpOnly: true, secure, path: '/', sameSite: 'lax', maxAge: 60 * 60 });
+  res.cookies.set(AUTH_COOKIE, token, {
+    ...AUTH_COOKIE_BASE,
+    httpOnly: true,
+    secure: isSecureCookie(),
+    maxAge: AUTH_MAX_AGE_SECONDS,
+  });
   return res;
 }
