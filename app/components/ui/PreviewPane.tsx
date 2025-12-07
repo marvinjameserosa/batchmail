@@ -15,6 +15,26 @@ import type { CsvMapping, ParsedCsv } from "./CsvUploader";
 import type { AttachIndex } from "./AttachmentsUploader";
 import VariablePicker from "./VariablePicker";
 
+const PREVIEW_RESET_STYLE =
+  "<style>html,body{margin:0!important;padding:0!important;background-color:transparent!important;}</style>";
+
+const normalizePreviewHtml = (html: string) => {
+  const trimmed = (html || "").trim();
+  if (!trimmed) {
+    return `<!DOCTYPE html><html><head>${PREVIEW_RESET_STYLE}</head><body></body></html>`;
+  }
+  if (/<head[\s>]/i.test(trimmed)) {
+    return trimmed.replace(/<head([^>]*)>/i, (_, attrs = "") => `<head${attrs}>${PREVIEW_RESET_STYLE}`);
+  }
+  if (/<html[\s>]/i.test(trimmed)) {
+    return trimmed.replace(
+      /<html([^>]*)>/i,
+      (_, attrs = "") => `<html${attrs}><head>${PREVIEW_RESET_STYLE}</head>`
+    );
+  }
+  return `<!DOCTYPE html><html><head>${PREVIEW_RESET_STYLE}</head><body>${trimmed}</body></html>`;
+};
+
 type Props = {
   csv: ParsedCsv | null;
   mapping: CsvMapping | null;
@@ -132,10 +152,10 @@ export default function PreviewPane({
   );
 
   const previewHtml = useMemo(() => {
-    if (!csv || !mapping) return template;
+    if (!csv || !mapping) return normalizePreviewHtml(template);
     const row = csv.rows[previewRowIndex];
-    if (!row) return template;
-    return renderRow(row);
+    const html = row ? renderRow(row) : template;
+    return normalizePreviewHtml(html);
   }, [csv, mapping, template, previewRowIndex, renderRow]);
 
   const recipients = useMemo(() => {
@@ -505,7 +525,10 @@ export default function PreviewPane({
   return (
     <>
       <div className="rounded-lg border p-4 space-y-4">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div
+          className="flex items-center justify-between gap-3 flex-wrap"
+          id="tutorial-env-controls"
+        >
           <h2 className="text-lg font-medium">3) Preview & Export</h2>
           <div className="flex items-center gap-2">
             {/* Variable insertion moved to Template tab */}
@@ -725,7 +748,7 @@ export default function PreviewPane({
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
-          <div className="lg:col-span-1 border rounded">
+          <div className="lg:col-span-1 border rounded" id="tutorial-recipient-list">
             <div className="px-3 py-2 text-sm bg-gray-50 border-b font-medium flex items-center justify-between">
               <span>Recipients</span>
               <span className="text-xs opacity-70">{recipients.length}</span>
@@ -747,7 +770,7 @@ export default function PreviewPane({
           </div>
 
           <div className="lg:col-span-2 space-y-4">
-            <div className="space-y-2">
+            <div className="space-y-2" id="tutorial-subject-editor">
               <div className="text-sm font-medium">Subject</div>
               <div className="flex items-center gap-2">
                 <input
@@ -788,7 +811,7 @@ export default function PreviewPane({
               )}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2" id="tutorial-preview-frame">
               <div className="text-sm font-medium">Preview</div>
               <div className="flex items-center gap-2">
                 <button
@@ -824,7 +847,7 @@ export default function PreviewPane({
 
         {/* Batches preview (always visible when recipients exist) */}
         {batchPreview.length > 0 && (
-          <div className="border rounded p-3 bg-white space-y-2">
+          <div className="border rounded p-3 bg-white space-y-2" id="tutorial-batch-preview">
             <div className="text-sm font-medium flex items-center gap-2">
               <span>Batches (preview)</span>
               <span className="text-xs opacity-70">

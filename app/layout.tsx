@@ -3,6 +3,7 @@ import Link from "next/link";
 import NavbarClient from "./components/ui/NavbarClient";
 import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
+import "driver.js/dist/driver.css";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,7 +31,7 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <header className="w-full bg-green-600 text-white">
           <div className="mx-auto max-w-6xl px-6 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div id="tutorial-brand" className="flex items-center gap-2">
               <Link href="/" className="text-lg font-semibold tracking-tight">BatchMail</Link>
               <span className="text-xs opacity-90">Automated Mailing</span>
             </div>

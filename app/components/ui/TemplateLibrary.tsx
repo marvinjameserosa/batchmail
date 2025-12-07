@@ -298,7 +298,7 @@ export default function TemplateLibrary({
         </div>
 
         {/* Upload HTML file */}
-        <div className="space-y-2">
+        <div className="space-y-2" id="tutorial-upload-html">
           <div className="text-sm font-medium">Upload HTML Template</div>
           <label className="inline-flex items-center gap-2 px-3 py-1 rounded border text-sm bg-white hover:bg-gray-50 cursor-pointer w-fit">
             <input
@@ -316,17 +316,19 @@ export default function TemplateLibrary({
           </label>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2" id="tutorial-email-message">
           <div className="text-sm font-medium flex items-center justify-between">
             <span>Email Message</span>
-            <VariablePicker
-              variables={available}
-              label="Insert Variable"
-              onInsert={(v) => {
-                editorRef.current?.insertVariable(v);
-                editorRef.current?.focus();
-              }}
-            />
+            <div id="tutorial-insert-variable">
+              <VariablePicker
+                variables={available}
+                label="Insert Variable"
+                onInsert={(v) => {
+                  editorRef.current?.insertVariable(v);
+                  editorRef.current?.focus();
+                }}
+              />
+            </div>
           </div>
           {!rawMode ? (
             <EmailEditor
