@@ -85,7 +85,7 @@ export default function PreviewPane({
   const [envOk, setEnvOk] = useState<boolean | null>(null);
   const [missing, setMissing] = useState<string[]>([]);
   const [systemVariant, setSystemVariantState] = useState<
-    "default" | "icpep" | "cisco" | "cyberph"
+    "default" | "icpep" | "cisco" | "cyberph" | "cyberph-noreply"
   >("default");
   // Default (.env) variant supports optional one-off upload/paste overrides (not persistent profiles)
   const [showPaste, setShowPaste] = useState(false);
@@ -105,7 +105,8 @@ export default function PreviewPane({
         if (
           d.systemVariant === "icpep" ||
           d.systemVariant === "cisco" ||
-          d.systemVariant === "cyberph"
+          d.systemVariant === "cyberph" ||
+          d.systemVariant === "cyberph-noreply"
         )
           setSystemVariantState(d.systemVariant);
         else setSystemVariantState("default");
@@ -296,6 +297,8 @@ export default function PreviewPane({
         ? "CNCP - Cisco NetConnect PUP"
         : systemVariant === "cyberph"
         ? "CyberPH"
+        : systemVariant === "cyberph-noreply"
+        ? "CyberPH - noreply"
         : "Default (.env)",
     [systemVariant]
   );
@@ -306,7 +309,7 @@ export default function PreviewPane({
         ? "/icpep-logo.jpg"
         : systemVariant === "cisco"
         ? "/cisco-logo.jpg"
-        : systemVariant === "cyberph"
+        : systemVariant === "cyberph" || systemVariant === "cyberph-noreply"
         ? "/cyberph-logo.svg"
         : null,
     [systemVariant]
@@ -343,6 +346,7 @@ export default function PreviewPane({
           attachmentsByName,
           delayMs: 2000,
           jitterMs: 250,
+          systemVariant,
         };
         const res = await fetch("/api/send/stream", {
           method: "POST",
@@ -435,6 +439,7 @@ export default function PreviewPane({
     subjectTemplate,
     attachmentsByName,
     batchSize,
+    systemVariant,
   ]);
 
   // Upload local .env to override default credentials (only allowed in default variant)
@@ -552,7 +557,8 @@ export default function PreviewPane({
                     | "default"
                     | "icpep"
                     | "cisco"
-                    | "cyberph";
+                    | "cyberph"
+                    | "cyberph-noreply";
                   try {
                     await fetch("/api/env/variant", {
                       method: "POST",
@@ -560,23 +566,20 @@ export default function PreviewPane({
                       body: JSON.stringify({ variant: val }),
                     });
                   } catch {}
-                  const chk = await fetch("/api/env");
+                  const chk = await fetch(
+                    `/api/env?variant=${encodeURIComponent(val)}`
+                  );
                   const d2 = await chk.json();
                   setEnvOk(!!d2.ok);
                   setMissing(Array.isArray(d2.missing) ? d2.missing : []);
-                  if (
-                    d2.systemVariant === "icpep" ||
-                    d2.systemVariant === "cisco" ||
-                    d2.systemVariant === "cyberph"
-                  )
-                    setSystemVariantState(d2.systemVariant);
-                  else setSystemVariantState("default");
+                  setSystemVariantState(val);
                 }}
               >
                 <option value="default">Default (.env)</option>
                 <option value="icpep">ICPEP SE - PUP Manila</option>
                 <option value="cisco">CNCP - Cisco NetConnect PUP</option>
                 <option value="cyberph">CyberPH</option>
+                <option value="cyberph-noreply">CyberPH - noreply</option>
               </select>
             </div>
             {/* Brand logo based on selection */}
@@ -585,6 +588,7 @@ export default function PreviewPane({
               const isIcpep = systemVariant === "icpep";
               const isCisco = systemVariant === "cisco";
               const isCyberph = systemVariant === "cyberph";
+              const isCyberphNoreply = systemVariant === "cyberph-noreply";
               if (isIcpep)
                 return (
                   <Image
@@ -605,7 +609,7 @@ export default function PreviewPane({
                     className="h-8 w-auto rounded-sm border"
                   />
                 );
-              if (isCyberph)
+              if (isCyberph || isCyberphNoreply)
                 return (
                   <Image
                     src="/cyberph-logo.svg"
@@ -678,7 +682,8 @@ export default function PreviewPane({
                   if (
                     systemVariant === "icpep" ||
                     systemVariant === "cisco" ||
-                    systemVariant === "cyberph"
+                    systemVariant === "cyberph" ||
+                    systemVariant === "cyberph-noreply"
                   ) {
                     setShowConfirmModal(true);
                     return;

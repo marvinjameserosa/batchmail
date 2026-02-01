@@ -2,7 +2,13 @@ import { normalizeNameKey } from "@/lib/normalizeName";
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import nunjucks from "nunjucks";
-import { getActiveEnv, getSystemVariant } from "../env/store";
+import {
+  SYSTEM_VARIANTS,
+  getActiveEnv,
+  getEnvForVariant,
+  getSystemVariant,
+  type SystemVariant,
+} from "../env/store";
 
 type Mapping = { recipient: string; name: string; subject?: string };
 type Row = Record<string, string>;
@@ -16,7 +22,12 @@ type Payload = {
     string,
     Array<{ filename: string; contentBase64: string; contentType?: string }>
   >;
-  systemVariant?: "default" | "icpep" | "cisco" | "cyberph";
+  systemVariant?:
+    | "default"
+    | "icpep"
+    | "cisco"
+    | "cyberph"
+    | "cyberph-noreply";
 };
 type Success = {
   to: string;
@@ -53,6 +64,7 @@ export async function POST(req: Request) {
     subjectTemplate,
     dryRun,
     attachmentsByName,
+    systemVariant: requestedVariant,
   } = (payload || {}) as Payload;
   if (!rows || !Array.isArray(rows) || !mapping || !template) {
     return NextResponse.json(
@@ -61,7 +73,13 @@ export async function POST(req: Request) {
     );
   }
 
-  const override = getActiveEnv();
+  const variant = (SYSTEM_VARIANTS as readonly string[]).includes(
+    requestedVariant || ""
+  )
+    ? (requestedVariant as SystemVariant)
+    : getSystemVariant();
+  const override =
+    variant === "default" ? getActiveEnv() : getEnvForVariant(variant);
   const SENDER_EMAIL = override.SENDER_EMAIL || process.env.SENDER_EMAIL;
   const SENDER_APP_PASSWORD =
     override.SENDER_APP_PASSWORD || process.env.SENDER_APP_PASSWORD;
@@ -75,11 +93,9 @@ export async function POST(req: Request) {
     );
   }
 
-  const systemVariant = getSystemVariant();
-
   // Configure transporter
   const transporter = nodemailer.createTransport(
-    systemVariant === "cyberph"
+    variant === "cyberph" || variant === "cyberph-noreply"
       ? {
           host: override.HOST_DOMAIN,
           port: Number(override.PORT),

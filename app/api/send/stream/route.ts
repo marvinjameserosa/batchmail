@@ -2,7 +2,13 @@ import { normalizeNameKey } from "@/lib/normalizeName";
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import nunjucks from "nunjucks";
-import { getActiveEnv, getSystemVariant } from "../../env/store";
+import {
+  SYSTEM_VARIANTS,
+  getActiveEnv,
+  getEnvForVariant,
+  getSystemVariant,
+  type SystemVariant,
+} from "../../env/store";
 
 // Streams NDJSON lines: {type:"start", total}, {type:"item", index, to, status, error?}, {type:"done", sent, failed}
 
@@ -50,7 +56,12 @@ type Payload = {
   delayMs?: number;
   // optional jitter in ms applied around delay (+/- jitter)
   jitterMs?: number;
-  systemVariant?: "default" | "icpep" | "cisco" | "cyberph";
+  systemVariant?:
+    | "default"
+    | "icpep"
+    | "cisco"
+    | "cyberph"
+    | "cyberph-noreply";
 };
 
 export async function POST(req: Request) {
@@ -71,6 +82,7 @@ export async function POST(req: Request) {
     attachmentsByName,
     delayMs,
     jitterMs,
+    systemVariant: requestedVariant,
   } = (payloadUnknown || {}) as Payload;
   if (!rows || !Array.isArray(rows) || !mapping || !template) {
     return NextResponse.json(
@@ -79,7 +91,13 @@ export async function POST(req: Request) {
     );
   }
 
-  const override = getActiveEnv();
+  const variant = (SYSTEM_VARIANTS as readonly string[]).includes(
+    requestedVariant || ""
+  )
+    ? (requestedVariant as SystemVariant)
+    : getSystemVariant();
+  const override =
+    variant === "default" ? getActiveEnv() : getEnvForVariant(variant);
   const SENDER_EMAIL = override.SENDER_EMAIL || process.env.SENDER_EMAIL;
   const SENDER_APP_PASSWORD =
     override.SENDER_APP_PASSWORD || process.env.SENDER_APP_PASSWORD;
@@ -92,10 +110,8 @@ export async function POST(req: Request) {
     );
   }
 
-  const systemVariant = getSystemVariant();
-
   const transporter = nodemailer.createTransport(
-    systemVariant === "cyberph"
+    variant === "cyberph" || variant === "cyberph-noreply"
       ? {
           host: override.HOST_DOMAIN,
           port: Number(override.PORT),

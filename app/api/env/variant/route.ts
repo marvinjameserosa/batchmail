@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { setSystemVariant } from "../store";
 
-const ALLOWED = new Set(["default", "icpep", "cisco", "cyberph"]);
+const ALLOWED = new Set([
+  "default",
+  "icpep",
+  "cisco",
+  "cyberph",
+  "cyberph-noreply",
+]);
 
 export async function POST(req: Request) {
   try {
@@ -14,7 +20,14 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-    setSystemVariant(variant as "default" | "icpep" | "cisco" | "cyberph");
+    setSystemVariant(
+      variant as
+        | "default"
+        | "icpep"
+        | "cisco"
+        | "cyberph"
+        | "cyberph-noreply"
+    );
     return NextResponse.json({ ok: true, variant });
   } catch {
     return NextResponse.json(

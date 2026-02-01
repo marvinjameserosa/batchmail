@@ -12,8 +12,21 @@ export type SenderEnv = {
 // In-memory multi-profile store
 let profiles: Record<string, SenderEnv> = {};
 let activeProfile: string | null = null;
-type SystemVariant = "default" | "icpep" | "cisco" | "cyberph";
-let systemVariant: SystemVariant = "default";
+export const SYSTEM_VARIANTS = [
+  "default",
+  "icpep",
+  "cisco",
+  "cyberph",
+  "cyberph-noreply",
+] as const;
+export type SystemVariant = (typeof SYSTEM_VARIANTS)[number];
+const hasCyberphEnv = !!(
+  process.env.CYBERPH_SENDER_EMAIL &&
+  process.env.CYBERPH_SENDER_PASSWORD &&
+  process.env.CYBERPH_HOST_DOMAIN &&
+  process.env.CYBERPH_PORT
+);
+let systemVariant: SystemVariant = hasCyberphEnv ? "cyberph" : "default";
 
 export function setProfile(name: string, values: SenderEnv) {
   const clean = name.trim();
@@ -49,28 +62,23 @@ export function setSystemVariant(variant: SystemVariant) {
   systemVariant = variant;
 }
 
-export function getActiveEnv(): SenderEnv {
-  // If a named profile is active, use it
-  if (activeProfile && profiles[activeProfile]) {
-    return { ...profiles[activeProfile] };
-  }
-  // Otherwise, derive from process.env based on selected system variant
+export function getEnvForVariant(variant: SystemVariant): SenderEnv {
   const env = process.env as Record<string, string | undefined>;
-  if (systemVariant === "icpep") {
+  if (variant === "icpep") {
     return {
       SENDER_EMAIL: env.ICPEP_SENDER_EMAIL,
       SENDER_APP_PASSWORD: env.ICPEP_SENDER_PASSWORD,
       SENDER_NAME: env.ICPEP_SENDER_NAME,
     };
   }
-  if (systemVariant === "cisco") {
+  if (variant === "cisco") {
     return {
       SENDER_EMAIL: env.CISCO_SENDER_EMAIL,
       SENDER_APP_PASSWORD: env.CISCO_SENDER_PASSWORD,
       SENDER_NAME: env.CISCO_SENDER_NAME,
     };
   }
-  if (systemVariant === "cyberph") {
+  if (variant === "cyberph" || variant === "cyberph-noreply") {
     return {
       SENDER_EMAIL: env.CYBERPH_SENDER_EMAIL,
       SENDER_APP_PASSWORD: env.CYBERPH_SENDER_PASSWORD,
@@ -85,6 +93,15 @@ export function getActiveEnv(): SenderEnv {
     SENDER_APP_PASSWORD: env.SENDER_APP_PASSWORD,
     SENDER_NAME: env.SENDER_NAME,
   };
+}
+
+export function getActiveEnv(): SenderEnv {
+  // If a named profile is active, use it
+  if (activeProfile && profiles[activeProfile]) {
+    return { ...profiles[activeProfile] };
+  }
+  // Otherwise, derive from process.env based on selected system variant
+  return getEnvForVariant(systemVariant);
 }
 
 export function clearProfile(name: string) {
