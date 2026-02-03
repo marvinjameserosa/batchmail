@@ -10,7 +10,11 @@ export type AttachmentEntry = {
 };
 
 export type UploadAttachmentsResult =
-  | { ok: true; items: Array<{ key: string; entry: AttachmentEntry }>; failed: string[] }
+  | {
+      ok: true;
+      items: Array<{ key: string; entry: AttachmentEntry }>;
+      failed: string[];
+    }
   | { ok: false; error: string };
 
 const fileBaseName = (name: string) => {
@@ -35,10 +39,15 @@ const toBase64 = async (file: File) => {
 const isFileLike = (value: unknown): value is File => {
   if (!value || typeof value !== "object") return false;
   const candidate = value as File;
-  return typeof candidate.name === "string" && typeof candidate.arrayBuffer === "function";
+  return (
+    typeof candidate.name === "string" &&
+    typeof candidate.arrayBuffer === "function"
+  );
 };
 
-export async function uploadAttachmentsAction(input: FormData): Promise<UploadAttachmentsResult> {
+export async function uploadAttachmentsAction(
+  input: FormData,
+): Promise<UploadAttachmentsResult> {
   if (!(input instanceof FormData)) {
     return { ok: false, error: "Invalid form data" };
   }
@@ -59,7 +68,7 @@ export async function uploadAttachmentsAction(input: FormData): Promise<UploadAt
         entry: {
           filename: file.name,
           contentBase64,
-          contentType: file.type || undefined,
+          contentType: file.type || "application/octet-stream",
           sizeBytes: typeof file.size === "number" ? file.size : undefined,
         },
       });
