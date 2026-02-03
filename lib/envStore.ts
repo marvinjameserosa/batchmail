@@ -68,11 +68,17 @@ export function getSystemVariant(): SystemVariant {
   return activeSystemVariant;
 }
 
-const readCyberphEnv = (prefix: string): EnvMap => ({
-  ...readSenderEnv(prefix),
-  HOST_DOMAIN: readEnv(`${prefix}_HOST_DOMAIN`) ?? readEnv("CYBERPH_HOST_DOMAIN"),
-  PORT: readEnv(`${prefix}_PORT`) ?? readEnv("CYBERPH_PORT"),
-  PORT_ALT: readEnv(`${prefix}_PORT_ALT`) ?? readEnv("CYBERPH_PORT_ALT"),
+const readCyberphEnv = (prefix: string, fallbackPrefix = "CYBERPH"): EnvMap => ({
+  SENDER_EMAIL:
+    readEnv(`${prefix}_SENDER_EMAIL`) ?? readEnv(`${fallbackPrefix}_SENDER_EMAIL`),
+  SENDER_APP_PASSWORD:
+    readPassword(prefix) ?? readPassword(fallbackPrefix),
+  SENDER_NAME:
+    readEnv(`${prefix}_SENDER_NAME`) ?? readEnv(`${fallbackPrefix}_SENDER_NAME`),
+  HOST_DOMAIN:
+    readEnv(`${prefix}_HOST_DOMAIN`) ?? readEnv(`${fallbackPrefix}_HOST_DOMAIN`),
+  PORT: readEnv(`${prefix}_PORT`) ?? readEnv(`${fallbackPrefix}_PORT`),
+  PORT_ALT: readEnv(`${prefix}_PORT_ALT`) ?? readEnv(`${fallbackPrefix}_PORT_ALT`),
 });
 
 export function getEnvForVariant(variant: SystemVariant): EnvMap {
@@ -86,7 +92,7 @@ export function getEnvForVariant(variant: SystemVariant): EnvMap {
     case "cyberph":
       return readCyberphEnv("CYBERPH");
     case "cyberph-noreply":
-      return readCyberphEnv("CYBERPH_NOREPLY");
+      return readCyberphEnv("CYBERPH_NOREPLY", "CYBERPH");
     default:
       return {};
   }
