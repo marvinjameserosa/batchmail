@@ -1,6 +1,13 @@
 "use client";
 
 import { normalizeNameKey } from "@/lib/normalizeName";
+import {
+  clearEnvAction,
+  getEnvStatusAction,
+  setVariantAction,
+  uploadEnvAction,
+} from "@/app/actions/env";
+import { sendBatchAction } from "@/app/actions/send";
 import Image from "next/image";
 import nunjucks from "nunjucks";
 import {
@@ -94,23 +101,26 @@ export default function PreviewPane({
   const [overrideApplied, setOverrideApplied] = useState(false);
   const subjectInputRef = useRef<HTMLInputElement | null>(null);
 
+  const refreshEnvStatus = useCallback(
+    async (variantOverride?: string | null) => {
+      const d = await getEnvStatusAction(variantOverride ?? null);
+      setEnvOk(!!d.ok);
+      setMissing(Array.isArray(d.missing) ? d.missing : []);
+      if (
+        d.systemVariant === "icpep" ||
+        d.systemVariant === "cisco" ||
+        d.systemVariant === "cyberph" ||
+        d.systemVariant === "cyberph-noreply"
+      )
+        setSystemVariantState(d.systemVariant);
+      else setSystemVariantState("default");
+    },
+    []
+  );
+
   useEffect(() => {
     let mounted = true;
-    fetch("/api/env")
-      .then((r) => r.json())
-      .then((d) => {
-        if (!mounted) return;
-        setEnvOk(!!d.ok);
-        setMissing(Array.isArray(d.missing) ? d.missing : []);
-        if (
-          d.systemVariant === "icpep" ||
-          d.systemVariant === "cisco" ||
-          d.systemVariant === "cyberph" ||
-          d.systemVariant === "cyberph-noreply"
-        )
-          setSystemVariantState(d.systemVariant);
-        else setSystemVariantState("default");
-      })
+    refreshEnvStatus()
       .catch(() => {
         if (!mounted) return;
         setEnvOk(false);
@@ -119,7 +129,7 @@ export default function PreviewPane({
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [refreshEnvStatus]);
 
   // Profiles removed from UI; using only system variant mapping.
 
@@ -348,13 +358,8 @@ export default function PreviewPane({
           jitterMs: 250,
           systemVariant,
         };
-        const res = await fetch("/api/send/stream", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-        if (!res.ok || !res.body) {
-          const data = await res.json().catch(() => null);
+        const res = await sendBatchAction(body);
+        if (!res.ok || !("items" in res)) {
           // mark whole batch as failed
           for (const r of batch) {
             const to = String(r[mapping.recipient] || "");
@@ -363,7 +368,7 @@ export default function PreviewPane({
               {
                 to,
                 status: "error",
-                error: data?.error || "Batch failed",
+                error: "error" in res ? res.error || "Batch failed" : "Batch failed",
                 attachments: 0,
                 timestamp: new Date().toISOString(),
               },
@@ -375,53 +380,22 @@ export default function PreviewPane({
           }));
           continue;
         }
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-        for (;;) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          let idx: number;
-          while ((idx = buffer.indexOf("\n")) >= 0) {
-            const line = buffer.slice(0, idx).trim();
-            buffer = buffer.slice(idx + 1);
-            if (!line) continue;
-            try {
-              const obj = JSON.parse(line);
-              if (obj.type === "start") {
-                // keep total as overall; only set if not yet set
-                setSendModalTotal((prev) =>
-                  prev == null
-                    ? typeof obj.total === "number"
-                      ? obj.total
-                      : null
-                    : prev
-                );
-              } else if (obj.type === "item") {
-                setSendModalLogs((prev) => [
-                  ...prev,
-                  {
-                    to: obj.to,
-                    status: obj.status,
-                    subject: obj.subject,
-                    error: obj.error,
-                    messageId: obj.messageId,
-                    attachments: obj.attachments,
-                    timestamp: obj.timestamp,
-                  },
-                ]);
-                setSendModalSummary((prev) => ({
-                  sent: obj.status === "sent" ? prev.sent + 1 : prev.sent,
-                  failed:
-                    obj.status === "error" ? prev.failed + 1 : prev.failed,
-                }));
-              } else if (obj.type === "done") {
-                // no-op; counts already tracked
-              }
-            } catch {}
-          }
-        }
+        setSendModalLogs((prev) => [
+          ...prev,
+          ...res.items.map((obj) => ({
+            to: obj.to,
+            status: obj.status,
+            subject: obj.subject,
+            error: obj.error,
+            messageId: obj.messageId,
+            attachments: obj.attachments,
+            timestamp: obj.timestamp,
+          })),
+        ]);
+        setSendModalSummary((prev) => ({
+          sent: prev.sent + res.sent,
+          failed: prev.failed + res.failed,
+        }));
         // small pause between batches
         await new Promise((r) => setTimeout(r, 200));
       }
@@ -449,13 +423,9 @@ export default function PreviewPane({
     fd.append("file", file);
     setUploading(true);
     try {
-      const res = await fetch("/api/env/upload", { method: "POST", body: fd });
-      const data = await res.json();
-      const chk = await fetch("/api/env");
-      const d2 = await chk.json();
-      setEnvOk(!!d2.ok);
-      setMissing(Array.isArray(d2.missing) ? d2.missing : []);
-      if (!res.ok || !data.ok) {
+      const data = await uploadEnvAction(fd);
+      await refreshEnvStatus();
+      if (!data.ok) {
         alert(
           `.env upload processed but missing: ${
             data.missing?.join(", ") || "unknown"
@@ -482,17 +452,9 @@ export default function PreviewPane({
     }
     setUploading(true);
     try {
-      const res = await fetch("/api/env/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ envText: pasteValue }),
-      });
-      const data = await res.json();
-      const chk = await fetch("/api/env");
-      const d2 = await chk.json();
-      setEnvOk(!!d2.ok);
-      setMissing(Array.isArray(d2.missing) ? d2.missing : []);
-      if (!res.ok || !data.ok) {
+      const data = await uploadEnvAction({ envText: pasteValue });
+      await refreshEnvStatus();
+      if (!data.ok) {
         alert(
           `Paste processed but missing: ${
             data.missing?.join(", ") || "unknown"
@@ -514,11 +476,8 @@ export default function PreviewPane({
     if (systemVariant !== "default") return;
     setUploading(true);
     try {
-      await fetch("/api/env/clear", { method: "POST" });
-      const chk = await fetch("/api/env");
-      const d2 = await chk.json();
-      setEnvOk(!!d2.ok);
-      setMissing(Array.isArray(d2.missing) ? d2.missing : []);
+      await clearEnvAction();
+      await refreshEnvStatus();
       setOverrideApplied(false);
     } catch (e) {
       alert(`Clear failed: ${(e as Error).message}`);
@@ -560,19 +519,9 @@ export default function PreviewPane({
                     | "cyberph"
                     | "cyberph-noreply";
                   try {
-                    await fetch("/api/env/variant", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ variant: val }),
-                    });
+                    await setVariantAction(val);
                   } catch {}
-                  const chk = await fetch(
-                    `/api/env?variant=${encodeURIComponent(val)}`
-                  );
-                  const d2 = await chk.json();
-                  setEnvOk(!!d2.ok);
-                  setMissing(Array.isArray(d2.missing) ? d2.missing : []);
-                  setSystemVariantState(val);
+                  await refreshEnvStatus(val);
                 }}
               >
                 <option value="default">Default (.env)</option>

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import { loginAction } from "@/app/actions/auth";
 
 function LoginInner() {
   const searchParams = useSearchParams();
@@ -36,18 +37,8 @@ function LoginInner() {
     setError(null);
     setLoading(true);
     try {
-      // Use explicit credentials to ensure cookie always set and visible immediately.
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Cache-Control": "no-cache",
-        },
-        body: JSON.stringify({ email, password }),
-        credentials: "include",
-      });
-      const data = await res.json();
-      if (!res.ok || !data.ok) {
+      const data = await loginAction({ email, password });
+      if (!data.ok) {
         setError(data.error || "Login failed");
       } else {
         // Show welcome modal then redirect with a slight delay so user sees confirmation

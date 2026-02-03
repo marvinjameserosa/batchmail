@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent, Dispatch, SetStateAction } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { getTemplateAction, listTemplatesAction } from "@/app/actions/templates";
 import EmailEditor, { EmailEditorHandle } from "./EmailEditor";
 import VariablePicker from "./VariablePicker";
 
@@ -73,17 +74,22 @@ export default function TemplateLibrary({
   }, [templates]);
 
   useEffect(() => {
-    fetch("/api/templates")
-      .then((res) => res.json())
-      .then((files) => setServerTemplates(files))
+    let mounted = true;
+    listTemplatesAction()
+      .then((files) => {
+        if (mounted) setServerTemplates(files);
+      })
       .catch(console.error);
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const onSelectTemplate = async (filename: string) => {
     try {
-      const res = await fetch(`/api/templates/${filename}`);
-      if (!res.ok) throw new Error(await res.text());
-      const { html } = await res.json();
+      const res = await getTemplateAction(filename);
+      if (!res.ok) throw new Error(res.error || "Failed to load template");
+      const { html } = res;
       const t: SavedTemplate = {
         id: uuid(),
         name: filename.replace(/\.html$/, ""),
