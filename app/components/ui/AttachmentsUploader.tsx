@@ -109,6 +109,7 @@ export default function AttachmentsUploader({ csv, mapping, value, onChange }: P
               ref={inputRef}
               type="file"
               multiple
+              accept="*/*"
               className="hidden"
               onChange={(e) => onUpload(e.target.files, e.target)}
             />
