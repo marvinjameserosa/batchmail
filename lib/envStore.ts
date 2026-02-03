@@ -24,7 +24,13 @@ const profileStore: ProfileStore = new Map();
 let activeProfileName: string | null = null;
 let activeSystemVariant: SystemVariant = "default";
 
-const readEnv = (key: string) => process.env[key];
+const readEnv = (key: string) => {
+  const raw = process.env[key];
+  if (raw === undefined || raw === null) return undefined;
+  const trimmed = String(raw).trim();
+  if (!trimmed) return undefined;
+  return trimmed.replace(/^"(.*)"$/, "$1").replace(/^'(.*)'$/, "$1");
+};
 
 const readPassword = (prefix: string) =>
   readEnv(`${prefix}_SENDER_APP_PASSWORD`) ?? readEnv(`${prefix}_SENDER_PASSWORD`);

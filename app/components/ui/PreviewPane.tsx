@@ -69,6 +69,9 @@ export default function PreviewPane({
       subject?: string;
       error?: string;
       messageId?: string;
+      response?: string;
+      accepted?: string[];
+      rejected?: string[];
       attachments?: number;
       timestamp?: string;
     }>
@@ -394,6 +397,9 @@ export default function PreviewPane({
             subject: obj.subject,
             error: obj.error,
             messageId: obj.messageId,
+            response: obj.response,
+            accepted: obj.accepted,
+            rejected: obj.rejected,
             attachments: obj.attachments,
             timestamp: obj.timestamp,
           })),
@@ -1088,7 +1094,14 @@ export default function PreviewPane({
                             : ""}
                         </td>
                         <td className="px-2 py-1 border whitespace-pre-wrap wrap-break-word">
-                          {l.error || l.messageId || ""}
+                          {l.error ||
+                            l.response ||
+                            l.messageId ||
+                            (l.accepted?.length
+                              ? `accepted: ${l.accepted.join(", ")}`
+                              : l.rejected?.length
+                              ? `rejected: ${l.rejected.join(", ")}`
+                              : "")}
                         </td>
                       </tr>
                     ))}

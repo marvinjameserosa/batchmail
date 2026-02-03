@@ -39,6 +39,9 @@ export type SendItem = {
   subject?: string;
   error?: string;
   messageId?: string;
+  response?: string;
+  accepted?: string[];
+  rejected?: string[];
   attachments?: number;
   timestamp?: string;
 };
@@ -159,6 +162,13 @@ export async function sendBatchAction(payload: SendPayload) {
         status: "sent",
         subject: subj,
         messageId: info.messageId,
+        response: info.response,
+        accepted: Array.isArray(info.accepted)
+          ? info.accepted.map((v) => String(v))
+          : undefined,
+        rejected: Array.isArray(info.rejected)
+          ? info.rejected.map((v) => String(v))
+          : undefined,
         attachments: atts.length,
         timestamp: new Date().toISOString(),
       });
