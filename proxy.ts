@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AUTH_COOKIE } from "@/lib/auth";
 
-const PUBLIC_PATH_PREFIXES = ["/_next", "/api/", "/templates", "/images", "/fonts"];
+const PUBLIC_PATH_PREFIXES = [
+  "/_next",
+  "/api/",
+  "/templates",
+  "/images",
+  "/fonts",
+];
 const PUBLIC_PATHS = new Set([
   "/login",
   "/favicon.ico",
@@ -9,7 +15,8 @@ const PUBLIC_PATHS = new Set([
   "/api/auth/logout",
 ]);
 
-const STATIC_EXT = /\.(png|jpg|jpeg|gif|svg|webp|ico|txt|json|xml|css|js|map)$/i;
+const STATIC_EXT =
+  /\.(png|jpg|jpeg|gif|svg|webp|ico|txt|json|xml|css|js|map)$/i;
 
 function isPublicPath(pathname: string) {
   if (pathname === "/") return false;
@@ -32,7 +39,7 @@ function isHtmlRequest(req: NextRequest) {
   return !hasExt && !pathname.startsWith("/api/");
 }
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const token = req.cookies.get(AUTH_COOKIE)?.value;
 
@@ -63,7 +70,7 @@ export function middleware(req: NextRequest) {
   return NextResponse.next();
 }
 
-export default middleware;
+export default proxy;
 
 export const config = {
   matcher: ["/:path*"],
