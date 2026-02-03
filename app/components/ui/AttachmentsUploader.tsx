@@ -1,7 +1,6 @@
 "use client";
 
 import { normalizeNameKey } from "@/lib/normalizeName";
-import { uploadAttachmentsAction } from "@/app/actions/attachments";
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { ParsedCsv, CsvMapping } from "./CsvUploader";
 
@@ -27,6 +26,16 @@ export default function AttachmentsUploader({ csv, mapping, value, onChange }: P
   const fileBaseName = useCallback((name: string) => {
     const idx = name.lastIndexOf('.');
     return idx > 0 ? name.slice(0, idx) : name;
+  }, []);
+  const fileToBase64 = useCallback(async (file: File) => {
+    const arrayBuffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    const chunkSize = 0x8000;
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+    }
+    return btoa(binary);
   }, []);
 
   const rowsNameSet = useMemo(() => {
@@ -68,21 +77,27 @@ export default function AttachmentsUploader({ csv, mapping, value, onChange }: P
     if (!files || files.length === 0) return;
     setUploadError(null);
     setIsUploading(true);
+    const next: AttachIndex = { ...value };
+    const failed: string[] = [];
     try {
-      const formData = new FormData();
-      Array.from(files).forEach((f) => formData.append("files", f));
-      const res = await uploadAttachmentsAction(formData);
-      if (!res.ok) {
-        setUploadError(res.error || "Upload failed");
-        return;
+      for (const file of Array.from(files)) {
+        try {
+          const contentBase64 = await fileToBase64(file);
+          const normalized = normalizeNameKey(fileBaseName(file.name));
+          const entry: AttachmentEntry = {
+            filename: file.name,
+            contentBase64,
+            contentType: file.type || undefined,
+            sizeBytes: typeof file.size === "number" ? file.size : undefined,
+          };
+          next[normalized] = [...(next[normalized] || []), entry];
+        } catch {
+          failed.push(file.name || "(unknown)");
+        }
       }
-      const next: AttachIndex = { ...value };
-      res.items.forEach(({ key, entry }) => {
-        const normalized = key || normalizeNameKey(fileBaseName(entry.filename));
-        next[normalized] = [...(next[normalized] || []), entry as AttachmentEntry];
-      });
-      if (res.failed?.length) {
-        setUploadError(`Failed: ${res.failed.slice(0, 6).join(", ")}${res.failed.length > 6 ? "…" : ""}`);
+
+      if (failed.length) {
+        setUploadError(`Failed: ${failed.slice(0, 6).join(", ")}${failed.length > 6 ? "…" : ""}`);
       }
       onChange(next);
     } finally {
