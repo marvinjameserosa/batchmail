@@ -28,6 +28,7 @@ export type SendPayload = {
     | "default"
     | "icpep"
     | "cisco"
+    | "arduinodayph"
     | "cyberph"
     | "cyberph-noreply";
 };

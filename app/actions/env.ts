@@ -124,13 +124,26 @@ export async function clearEnvAction() {
 }
 
 export async function setVariantAction(variant: string) {
-  const allowed = new Set(["default", "icpep", "cisco", "cyberph", "cyberph-noreply"]);
+  const allowed = new Set([
+    "default",
+    "icpep",
+    "cisco",
+    "arduinodayph",
+    "cyberph",
+    "cyberph-noreply",
+  ]);
   const normalized = typeof variant === "string" ? variant.toLowerCase() : "default";
   if (!allowed.has(normalized)) {
     return { ok: false, error: "Invalid variant" } as const;
   }
   setSystemVariant(
-    normalized as "default" | "icpep" | "cisco" | "cyberph" | "cyberph-noreply"
+    normalized as
+      | "default"
+      | "icpep"
+      | "cisco"
+      | "arduinodayph"
+      | "cyberph"
+      | "cyberph-noreply"
   );
   return { ok: true, variant: normalized } as const;
 }
