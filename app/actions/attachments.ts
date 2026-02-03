@@ -19,15 +19,30 @@ const fileBaseName = (name: string) => {
 };
 
 const toBase64 = async (file: File) => {
-  const buffer = Buffer.from(await file.arrayBuffer());
-  return buffer.toString("base64");
+  const arrayBuffer = await file.arrayBuffer();
+  if (typeof Buffer !== "undefined") {
+    return Buffer.from(arrayBuffer).toString("base64");
+  }
+  const bytes = new Uint8Array(arrayBuffer);
+  const chunkSize = 0x8000;
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+};
+
+const isFileLike = (value: unknown): value is File => {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as File;
+  return typeof candidate.name === "string" && typeof candidate.arrayBuffer === "function";
 };
 
 export async function uploadAttachmentsAction(input: FormData): Promise<UploadAttachmentsResult> {
   if (!(input instanceof FormData)) {
     return { ok: false, error: "Invalid form data" };
   }
-  const files = input.getAll("files").filter((f) => f instanceof File) as File[];
+  const files = input.getAll("files").filter(isFileLike);
   if (!files.length) {
     return { ok: false, error: "No files provided" };
   }
