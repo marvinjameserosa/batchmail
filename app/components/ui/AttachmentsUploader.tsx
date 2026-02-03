@@ -1,7 +1,8 @@
 "use client";
 
 import { normalizeNameKey } from "@/lib/normalizeName";
-import { useCallback, useMemo, useRef } from "react";
+import { uploadAttachmentsAction } from "@/app/actions/attachments";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type { ParsedCsv, CsvMapping } from "./CsvUploader";
 
 export type AttachmentEntry = {
@@ -21,6 +22,8 @@ type Props = {
 
 export default function AttachmentsUploader({ csv, mapping, value, onChange }: Props) {
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileBaseName = useCallback((name: string) => {
     const idx = name.lastIndexOf('.');
     return idx > 0 ? name.slice(0, idx) : name;
@@ -61,37 +64,31 @@ export default function AttachmentsUploader({ csv, mapping, value, onChange }: P
     );
   }, [value]);
 
-  const fileToBase64 = (file: File) => new Promise<string>((resolve, reject) => {
-    const fr = new FileReader();
-    fr.onload = () => {
-      const res = String(fr.result || '');
-      const idx = res.indexOf('base64,');
-      resolve(idx >= 0 ? res.slice(idx + 7) : res);
-    };
-    fr.onerror = () => reject(fr.error || new Error('read error'));
-    fr.readAsDataURL(file);
-  });
-
   const onUpload = async (files: FileList | null, source?: HTMLInputElement | null) => {
     if (!files || files.length === 0) return;
-    const next: AttachIndex = { ...value };
-    for (const f of Array.from(files)) {
-      try {
-        const contentBase64 = await fileToBase64(f);
-        const key = normalizeNameKey(fileBaseName(f.name));
-        const entry: AttachmentEntry = {
-          filename: f.name,
-          contentBase64,
-          contentType: f.type || undefined,
-          sizeBytes: typeof f.size === "number" ? f.size : undefined,
-        };
-        next[key] = [...(next[key] || []), entry];
-      } catch {
-        // ignore failed file
+    setUploadError(null);
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      Array.from(files).forEach((f) => formData.append("files", f));
+      const res = await uploadAttachmentsAction(formData);
+      if (!res.ok) {
+        setUploadError(res.error || "Upload failed");
+        return;
       }
+      const next: AttachIndex = { ...value };
+      res.items.forEach(({ key, entry }) => {
+        const normalized = key || normalizeNameKey(fileBaseName(entry.filename));
+        next[normalized] = [...(next[normalized] || []), entry as AttachmentEntry];
+      });
+      if (res.failed?.length) {
+        setUploadError(`Failed: ${res.failed.slice(0, 6).join(", ")}${res.failed.length > 6 ? "…" : ""}`);
+      }
+      onChange(next);
+    } finally {
+      setIsUploading(false);
+      if (source) source.value = "";
     }
-    onChange(next);
-    if (source) source.value = "";
   };
 
   const clearAll = () => {
@@ -115,7 +112,7 @@ export default function AttachmentsUploader({ csv, mapping, value, onChange }: P
               className="hidden"
               onChange={(e) => onUpload(e.target.files, e.target)}
             />
-            Choose files…
+            {isUploading ? "Uploading…" : "Choose files…"}
           </label>
           <button type="button" onClick={clearAll} disabled={computed.files === 0} className="px-3 py-1 rounded border text-sm bg-white hover:bg-gray-50 disabled:opacity-50">Clear</button>
         </div>
@@ -136,6 +133,12 @@ export default function AttachmentsUploader({ csv, mapping, value, onChange }: P
             {computed.unmatchedFiles.length > 30 && <li>…and {computed.unmatchedFiles.length - 30} more</li>}
           </ul>
         </details>
+      )}
+
+      {uploadError && (
+        <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">
+          {uploadError}
+        </div>
       )}
 
       {largePdfDetected && (
