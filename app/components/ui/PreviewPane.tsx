@@ -92,7 +92,12 @@ export default function PreviewPane({
   const [envOk, setEnvOk] = useState<boolean | null>(null);
   const [missing, setMissing] = useState<string[]>([]);
   const [systemVariant, setSystemVariantState] = useState<
-    "default" | "icpep" | "cisco" | "cyberph" | "cyberph-noreply"
+    "default"
+    | "icpep"
+    | "cisco"
+    | "arduinodayph"
+    | "cyberph"
+    | "cyberph-noreply"
   >("default");
   // Default (.env) variant supports optional one-off upload/paste overrides (not persistent profiles)
   const [showPaste, setShowPaste] = useState(false);
@@ -109,6 +114,7 @@ export default function PreviewPane({
       if (
         d.systemVariant === "icpep" ||
         d.systemVariant === "cisco" ||
+        d.systemVariant === "arduinodayph" ||
         d.systemVariant === "cyberph" ||
         d.systemVariant === "cyberph-noreply"
       )
@@ -516,6 +522,7 @@ export default function PreviewPane({
                     | "default"
                     | "icpep"
                     | "cisco"
+                    | "arduinodayph"
                     | "cyberph"
                     | "cyberph-noreply";
                   try {
@@ -527,6 +534,7 @@ export default function PreviewPane({
                 <option value="default">Default (.env)</option>
                 <option value="icpep">ICPEP SE - PUP Manila</option>
                 <option value="cisco">CNCP - Cisco NetConnect PUP</option>
+                <option value="arduinodayph">Arduino Day Philippines</option>
                 <option value="cyberph">CyberPH</option>
                 <option value="cyberph-noreply">CyberPH - noreply</option>
               </select>
@@ -536,6 +544,7 @@ export default function PreviewPane({
               // Decide brand from system variant
               const isIcpep = systemVariant === "icpep";
               const isCisco = systemVariant === "cisco";
+              const isArduino = systemVariant === "arduinodayph";
               const isCyberph = systemVariant === "cyberph";
               const isCyberphNoreply = systemVariant === "cyberph-noreply";
               if (isIcpep)
@@ -553,6 +562,16 @@ export default function PreviewPane({
                   <Image
                     src="/cisco-logo.jpg"
                     alt="Cisco"
+                    width={80}
+                    height={32}
+                    className="h-8 w-auto rounded-sm border"
+                  />
+                );
+              if (isArduino)
+                return (
+                  <Image
+                    src="/arduinoday.jpg"
+                    alt="Arduino Day Philippines"
                     width={80}
                     height={32}
                     className="h-8 w-auto rounded-sm border"

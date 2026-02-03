@@ -11,6 +11,7 @@ export const SYSTEM_VARIANTS = [
   "default",
   "icpep",
   "cisco",
+  "arduinodayph",
   "cyberph",
   "cyberph-noreply",
 ] as const;
@@ -80,6 +81,8 @@ export function getEnvForVariant(variant: SystemVariant): EnvMap {
       return readSenderEnv("ICPEP");
     case "cisco":
       return readSenderEnv("CISCO");
+    case "arduinodayph":
+      return readSenderEnv("ARDUINODAYPH");
     case "cyberph":
       return readCyberphEnv("CYBERPH");
     case "cyberph-noreply":
