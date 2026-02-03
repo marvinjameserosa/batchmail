@@ -11,7 +11,7 @@ import {
   type SystemVariant,
 } from "@/lib/envStore";
 
-type Mapping = { recipient: string; name: string; subject?: string };
+type Mapping = { recipient: string; name: string; subject?: string | null };
 export type Row = Record<string, string>;
 export type SendPayload = {
   rows: Row[];
