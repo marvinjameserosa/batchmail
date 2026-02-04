@@ -815,6 +815,49 @@ export default function PreviewPane({
                   Next
                 </button>
               </div>
+              {/* Attachments for current preview row */}
+              {(() => {
+                if (!csv || !mapping) return null;
+                const row = csv.rows[previewRowIndex];
+                if (!row) return null;
+                const email = row[mapping.recipient];
+                const attachments = email ? attachmentsByRecipient.get(String(email)) : null;
+                if (!attachments || attachments.length === 0) {
+                  return (
+                    <div className="text-xs text-gray-500 flex items-center gap-1.5">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                        <path fillRule="evenodd" d="M15.621 4.379a3 3 0 00-4.242 0l-7 7a3 3 0 004.241 4.243h.001l.497-.5a.75.75 0 011.064 1.057l-.498.501-.002.002a4.5 4.5 0 01-6.364-6.364l7-7a4.5 4.5 0 016.368 6.36l-3.455 3.553A2.625 2.625 0 119.52 9.52l3.45-3.451a.75.75 0 111.061 1.06l-3.45 3.451a1.125 1.125 0 001.587 1.595l3.454-3.553a3 3 0 000-4.242z" clipRule="evenodd" />
+                      </svg>
+                      No attachments for this recipient
+                    </div>
+                  );
+                }
+                return (
+                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <table className="w-full text-xs">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-3 py-1.5 text-left font-medium text-gray-700 border-b border-gray-200">Attachments ({attachments.length})</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {attachments.map((file, idx) => (
+                          <tr key={idx} className="border-b border-gray-200 last:border-b-0">
+                            <td className="px-3 py-1.5 text-gray-700">
+                              <span className="inline-flex items-center gap-1.5">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0">
+                                  <path d="M3 3.5A1.5 1.5 0 014.5 2h6.879a1.5 1.5 0 011.06.44l4.122 4.12A1.5 1.5 0 0117 7.622V16.5a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 013 16.5v-13z" />
+                                </svg>
+                                {file}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
               <iframe
                 srcDoc={previewHtml}
                 className="w-full h-96 border rounded bg-white"
