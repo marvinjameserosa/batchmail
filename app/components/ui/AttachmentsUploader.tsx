@@ -153,35 +153,45 @@ export default function AttachmentsUploader({ csv, mapping, value, onChange }: P
   <span className="text-red-700"><strong>Unmatched:</strong> {computed.unmatched}</span>
       </div>
 
-      {/* Matched pairs visualization */}
+      {/* Matched pairs table */}
       {computed.matchedPairs.length > 0 && (
         <details className="text-xs" open>
           <summary className="cursor-pointer font-medium text-green-700">View matched attachments ({computed.matched} files)</summary>
-          <div className="mt-2 space-y-2 max-h-48 overflow-y-auto">
-            {computed.matchedPairs.map((pair, i) => (
-              <div key={i} className="flex items-start gap-2 rounded border border-green-200 bg-green-50 p-2">
-                <div className="flex-shrink-0">
-                  <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-green-600 text-white text-xs">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
-                      <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
-                    </svg>
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-green-800 truncate">{pair.name}</p>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {pair.files.map((file, j) => (
-                      <span key={j} className="inline-flex items-center gap-1 rounded bg-white px-1.5 py-0.5 text-gray-700 border border-green-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-gray-400">
-                          <path d="M3 3.5A1.5 1.5 0 014.5 2h6.879a1.5 1.5 0 011.06.44l4.122 4.12A1.5 1.5 0 0117 7.622V16.5a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 013 16.5v-13z" />
+          <div className="mt-2 overflow-x-auto border border-gray-200 rounded-lg max-h-48 overflow-y-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 sticky top-0">
+                <tr>
+                  <th className="px-3 py-2 text-left font-medium text-gray-700 border-b border-gray-200">Name</th>
+                  <th className="px-3 py-2 text-left font-medium text-gray-700 border-b border-gray-200">Attachments</th>
+                </tr>
+              </thead>
+              <tbody>
+                {computed.matchedPairs.map((pair, i) => (
+                  <tr key={i} className="border-b border-gray-200 last:border-b-0">
+                    <td className="px-3 py-2 text-gray-900 align-top whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-green-600 flex-shrink-0">
+                          <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
                         </svg>
-                        {file}
+                        {pair.name}
                       </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
+                    </td>
+                    <td className="px-3 py-2 text-gray-700">
+                      <div className="flex flex-wrap gap-1">
+                        {pair.files.map((file, j) => (
+                          <span key={j} className="inline-flex items-center gap-1 rounded bg-gray-100 px-1.5 py-0.5 text-xs">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-gray-400">
+                              <path d="M3 3.5A1.5 1.5 0 014.5 2h6.879a1.5 1.5 0 011.06.44l4.122 4.12A1.5 1.5 0 0117 7.622V16.5a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 013 16.5v-13z" />
+                            </svg>
+                            {file}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </details>
       )}
