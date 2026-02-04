@@ -162,11 +162,11 @@ export default function TemplateLibrary({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
       {/* Sidebar */}
-      <div className="lg:col-span-1 border rounded h-full">
-        <div className="px-3 py-2 border-b flex items-center justify-between">
+      <div className="lg:col-span-1 border border-gray-200 rounded h-full">
+        <div className="px-3 py-2 border-b border-gray-200 flex items-center justify-between">
           <div className="text-sm font-medium">Templates</div>
           <button
-            className="w-6 h-6 rounded border text-sm leading-5"
+            className="w-6 h-6 rounded border border-gray-200 text-sm leading-5"
             onClick={addTemplate}
           >
             +
@@ -176,7 +176,7 @@ export default function TemplateLibrary({
           {serverTemplates.map((filename) => (
             <div
               key={filename}
-              className={`group flex items-center justify-between gap-2 px-3 py-2 border-b hover:bg-gray-50`}
+              className={`group flex items-center justify-between gap-2 px-3 py-2 border-b border-gray-200 hover:bg-gray-50`}
             >
               <button
                 onClick={() => onSelectTemplate(filename)}
@@ -194,7 +194,7 @@ export default function TemplateLibrary({
           {templates.map((t) => (
             <div
               key={t.id}
-              className={`group flex items-center justify-between gap-2 px-3 py-2 border-b ${
+              className={`group flex items-center justify-between gap-2 px-3 py-2 border-b border-gray-200 ${
                 t.id === active.id ? "bg-gray-50" : "hover:bg-gray-50"
               }`}
             >
@@ -214,7 +214,7 @@ export default function TemplateLibrary({
                   type="button"
                   aria-label="Delete template"
                   onClick={() => deleteTemplate(t.id)}
-                  className="opacity-60 group-hover:opacity-100 text-xs px-2 py-1 rounded border bg-white hover:bg-red-50 hover:text-red-700"
+                  className="opacity-60 group-hover:opacity-100 text-xs px-2 py-1 rounded border border-gray-200 bg-white hover:bg-red-50 hover:text-red-700"
                 >
                   Delete
                 </button>
@@ -254,7 +254,7 @@ export default function TemplateLibrary({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              className="px-3 py-1 rounded border text-sm bg-white hover:bg-gray-50"
+              className="px-3 py-1 rounded border border-gray-200 text-sm bg-white hover:bg-gray-50"
               onClick={() =>
                 setRawMode((v) => {
                   const next = !v;
@@ -275,13 +275,13 @@ export default function TemplateLibrary({
             </button>
             <button
               onClick={saveAsNew}
-              className="px-3 py-1 border rounded text-sm bg-white hover:bg-gray-50"
+              className="px-3 py-1 border border-gray-200 rounded text-sm bg-white hover:bg-gray-50"
             >
               Save as new Template
             </button>
             <button
               type="button"
-              className="px-3 py-1 rounded border text-sm bg-green-600 text-white hover:bg-green-700"
+              className="px-3 py-1 rounded border border-green-600 text-sm bg-green-600 text-white hover:bg-green-700"
               onClick={() => {
                 onUseTemplate({ html: active.html });
                 setApplied(true);
@@ -298,7 +298,7 @@ export default function TemplateLibrary({
           <input
             value={active.name}
             onChange={(e) => updateActive({ name: e.target.value })}
-            className="w-full rounded border px-3 py-2 text-sm"
+            className="w-full rounded border border-gray-200 px-3 py-2 text-sm"
             placeholder="Enter a name"
           />
         </div>
@@ -306,7 +306,7 @@ export default function TemplateLibrary({
         {/* Upload HTML file */}
         <div className="space-y-2" id="tutorial-upload-html">
           <div className="text-sm font-medium">Upload HTML Template</div>
-          <label className="inline-flex items-center gap-2 px-3 py-1 rounded border text-sm bg-white hover:bg-gray-50 cursor-pointer w-fit">
+          <label className="inline-flex items-center gap-2 px-3 py-1 rounded border border-gray-200 text-sm bg-white hover:bg-gray-50 cursor-pointer w-fit">
             <input
               type="file"
               accept=".html,.htm,.txt"

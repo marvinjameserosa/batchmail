@@ -29,12 +29,16 @@ const guessName = (headers: string[]) =>
 const guessSubject = (headers: string[]) =>
   headers.find((h) => /^(subject|title|headline|topic)$/i.test(h)) || null;
 
+const DEFAULT_HEADERS = ["email", "name"];
+
 export default function CsvUploader({ onParsed, currentMapping }: Props) {
   const [csv, setCsv] = useState<ParsedCsv | null>(null);
   const [mapping, setMapping] = useState<CsvMapping | null>(currentMapping ?? null);
   const [error, setError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string>("");
   const [dragActive, setDragActive] = useState<boolean>(false);
+  const [showManualEntry, setShowManualEntry] = useState<boolean>(false);
+  const [manualRow, setManualRow] = useState<Record<string, string>>({});
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const handleFile = useCallback((file: File) => {
@@ -77,6 +81,61 @@ export default function CsvUploader({ onParsed, currentMapping }: Props) {
     onParsed({ csv, mapping: next });
   };
 
+  const initializeManualEntry = () => {
+    if (!csv) {
+      // Create a new CSV structure with default headers
+      const headers = DEFAULT_HEADERS;
+      const parsed: ParsedCsv = { headers, rows: [], rowCount: 0 };
+      setCsv(parsed);
+      const nextMapping: CsvMapping = {
+        recipient: "email",
+        name: "name",
+        subject: null,
+      };
+      setMapping(nextMapping);
+      setManualRow({ email: "", name: "" });
+    } else {
+      // Use existing headers
+      const newRow: Record<string, string> = {};
+      csv.headers.forEach((h) => (newRow[h] = ""));
+      setManualRow(newRow);
+    }
+    setShowManualEntry(true);
+  };
+
+  const addManualRow = () => {
+    const headers = csv?.headers || DEFAULT_HEADERS;
+    const currentMapping = mapping || { recipient: "email", name: "name", subject: null };
+    
+    // Validate that recipient (email) is filled
+    const recipientKey = currentMapping.recipient || "email";
+    if (!manualRow[recipientKey]?.trim()) {
+      setError("Email/recipient field is required.");
+      return;
+    }
+
+    const newRows = [...(csv?.rows || []), { ...manualRow }];
+    const parsed: ParsedCsv = {
+      headers,
+      rows: newRows,
+      rowCount: newRows.length,
+    };
+    setCsv(parsed);
+    onParsed({ csv: parsed, mapping: currentMapping });
+    
+    // Reset manual row for next entry
+    const newRow: Record<string, string> = {};
+    headers.forEach((h) => (newRow[h] = ""));
+    setManualRow(newRow);
+    setError(null);
+  };
+
+  const cancelManualEntry = () => {
+    setShowManualEntry(false);
+    setManualRow({});
+    setError(null);
+  };
+
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -99,12 +158,12 @@ export default function CsvUploader({ onParsed, currentMapping }: Props) {
   }, []);
 
   return (
-    <div className="rounded-lg border p-4 space-y-4">
+    <div className="rounded-lg border border-gray-200 p-4 space-y-4">
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold">1) Upload CSV</h2>
-            <p className="text-sm opacity-80">Provide a CSV with a header row. Drag & drop or use the button.</p>
+            <h2 className="text-lg font-semibold">1) Upload CSV or Add Manually</h2>
+            <p className="text-sm opacity-80">Provide a CSV with a header row, drag & drop, or add recipients manually.</p>
           </div>
           <div className="flex items-center gap-2">
             <input
@@ -120,10 +179,17 @@ export default function CsvUploader({ onParsed, currentMapping }: Props) {
             />
             <label
               htmlFor="csv-file-input"
-              className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium shadow-sm cursor-pointer hover:bg-gray-50 focus-within:ring-2 focus-within:ring-green-600"
+              className="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium shadow-sm cursor-pointer hover:bg-gray-50 focus-within:ring-2 focus-within:ring-green-600"
             >
               <span className="inline-block">{fileName || "Choose CSV"}</span>
             </label>
+            <button
+              type="button"
+              onClick={initializeManualEntry}
+              className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium shadow-sm hover:bg-gray-50"
+            >
+              + Add Manually
+            </button>
             {csv && (
               <button
                 type="button"
@@ -133,8 +199,10 @@ export default function CsvUploader({ onParsed, currentMapping }: Props) {
                   setMapping(null);
                   setError(null);
                   setFileName("");
+                  setShowManualEntry(false);
+                  setManualRow({});
                 }}
-                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium shadow-sm hover:bg-gray-50"
+                className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium shadow-sm hover:bg-gray-50"
               >
                 Reset
               </button>
@@ -146,13 +214,94 @@ export default function CsvUploader({ onParsed, currentMapping }: Props) {
           onDragOver={onDrag}
           onDragLeave={onDrag}
           onDrop={onDrop}
-          className={`group relative rounded-md border border-dashed p-6 text-center transition-colors ${dragActive ? "border-green-500 bg-green-50" : "border-gray-300"}`}
+          className={`group relative rounded-md border border-dashed p-6 text-center transition-colors ${dragActive ? "border-green-500 bg-green-50" : "border-gray-200"}`}
         >
           <p className="text-sm">{dragActive ? "Release to upload CSV" : "Drag & drop CSV here or use the button above."}</p>
         </div>
       </div>
 
       {error && <div className="text-sm text-red-600">{error}</div>}
+
+      {/* Manual Entry Table */}
+      {showManualEntry && (
+        <div className="space-y-3">
+          <div className="overflow-x-auto border border-gray-200 rounded-lg">
+            <table className="w-full text-sm">
+              <tbody>
+                {/* Existing rows */}
+                {csv?.rows.map((row, rowIndex) => (
+                  <tr key={rowIndex} className="border-b border-gray-200">
+                    {(csv?.headers || DEFAULT_HEADERS).map((header) => (
+                      <td key={header} className="px-3 py-2 text-gray-900 border-r border-gray-200 last:border-r-0">
+                        {row[header] || ""}
+                      </td>
+                    ))}
+                    <td className="px-3 py-2 text-right border-l border-gray-200">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newRows = csv.rows.filter((_, i) => i !== rowIndex);
+                          const parsed: ParsedCsv = {
+                            headers: csv.headers,
+                            rows: newRows,
+                            rowCount: newRows.length,
+                          };
+                          setCsv(parsed);
+                          if (mapping) onParsed({ csv: parsed, mapping });
+                        }}
+                        className="rounded border border-gray-200 bg-white px-2 py-1 text-xs font-medium hover:bg-gray-50"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {/* Input row for adding new entry */}
+                <tr>
+                  {(csv?.headers || DEFAULT_HEADERS).map((header) => (
+                    <td key={header} className="px-3 py-2 border-r border-gray-200 last:border-r-0">
+                      <input
+                        type={header.toLowerCase().includes("email") ? "email" : "text"}
+                        value={manualRow[header] || ""}
+                        onChange={(e) => setManualRow((prev) => ({ ...prev, [header]: e.target.value }))}
+                        placeholder={header.toLowerCase().includes("email") ? "email@example.com" : `Enter ${header}`}
+                        className="w-full rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-600"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            addManualRow();
+                          }
+                        }}
+                      />
+                    </td>
+                  ))}
+                  <td className="px-3 py-2 border-l border-gray-200">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={cancelManualEntry}
+                        className="rounded border border-gray-200 bg-white px-2 py-1 text-xs font-medium hover:bg-gray-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={addManualRow}
+                        className="rounded border border-gray-200 bg-white px-2 py-1 text-xs font-medium hover:bg-gray-50"
+                      >
+                        + Row
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="text-xs text-gray-500">
+            {csv?.rowCount ? `${csv.rowCount} recipient${csv.rowCount !== 1 ? "s" : ""} added` : "No recipients yet"} — Press Enter or click "+ Row" to add
+          </div>
+        </div>
+      )}
 
       {csv && (
         <div className="space-y-4">
@@ -161,7 +310,7 @@ export default function CsvUploader({ onParsed, currentMapping }: Props) {
             <label className="text-sm flex flex-col gap-1">
               <span className="text-xs font-medium opacity-80">Recipient column</span>
               <select
-                className="w-full rounded-md border px-2 py-1.5 text-sm bg-white border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600"
+                className="w-full rounded-md border px-2 py-1.5 text-sm bg-white border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-600"
                 value={mapping?.recipient || ""}
                 onChange={(e) => onChangeSelect("recipient", e.target.value)}
               >
@@ -173,7 +322,7 @@ export default function CsvUploader({ onParsed, currentMapping }: Props) {
             <label className="text-sm flex flex-col gap-1">
               <span className="text-xs font-medium opacity-80">Name column</span>
               <select
-                className="w-full rounded-md border px-2 py-1.5 text-sm bg-white border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600"
+                className="w-full rounded-md border px-2 py-1.5 text-sm bg-white border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-600"
                 value={mapping?.name || ""}
                 onChange={(e) => onChangeSelect("name", e.target.value)}
               >
@@ -185,7 +334,7 @@ export default function CsvUploader({ onParsed, currentMapping }: Props) {
             <label className="text-sm flex flex-col gap-1">
               <span className="text-xs font-medium opacity-80">Subject column (optional)</span>
               <select
-                className="w-full rounded-md border px-2 py-1.5 text-sm bg-white border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600"
+                className="w-full rounded-md border px-2 py-1.5 text-sm bg-white border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-600"
                 value={mapping?.subject || ""}
                 onChange={(e) => onChangeSelect("subject", e.target.value)}
               >

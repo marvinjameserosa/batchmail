@@ -70,7 +70,7 @@ export default function Tabs({ items, initialId, onChange, isDisabled, getDisabl
         })}
       </div>
       {blockedMsg && (
-        <div role="status" className="mb-3 text-xs px-3 py-2 rounded border bg-yellow-50 border-yellow-200 text-yellow-900">
+        <div role="status" className="mb-3 text-xs px-3 py-2 rounded border border-yellow-200 bg-yellow-50 text-yellow-900">
           {blockedMsg}
         </div>
       )}

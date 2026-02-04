@@ -34,18 +34,18 @@ export default function VariablePicker({ variables, onInsert, label = "Insert va
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="px-2 py-1 border rounded text-xs bg-white hover:bg-gray-50"
+        className="px-2 py-1 border border-gray-200 rounded text-xs bg-white hover:bg-gray-50"
       >
         {label}
       </button>
       {open && (
-        <div className="absolute z-10 mt-2 w-56 rounded border bg-white shadow">
-          <div className="p-2 border-b">
+        <div className="absolute z-10 mt-2 w-56 rounded border border-gray-200 bg-white shadow">
+          <div className="p-2 border-b border-gray-200">
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search variables"
-              className="w-full border rounded px-2 py-1 text-xs"
+              className="w-full border border-gray-200 rounded px-2 py-1 text-xs"
             />
           </div>
           <div className="max-h-56 overflow-auto">

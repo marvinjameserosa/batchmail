@@ -500,7 +500,7 @@ export default function PreviewPane({
 
   return (
     <>
-      <div className="rounded-lg border p-4 space-y-4">
+      <div className="rounded-lg border border-gray-200 p-4 space-y-4">
         <div
           className="flex items-center justify-between gap-3 flex-wrap"
           id="tutorial-env-controls"
@@ -509,19 +509,19 @@ export default function PreviewPane({
           <div className="flex items-center gap-2">
             {/* Variable insertion moved to Template tab */}
             {envOk === true && (
-              <span className="px-2 py-0.5 rounded border text-xs bg-green-50 border-green-200 text-green-800">
+              <span className="px-2 py-0.5 rounded border border-green-200 text-xs bg-green-50 text-green-800">
                 Sender env OK
               </span>
             )}
             {envOk === false && (
-              <span className="px-2 py-0.5 rounded border text-xs bg-red-50 border-red-200 text-red-800">
+              <span className="px-2 py-0.5 rounded border border-red-200 text-xs bg-red-50 text-red-800">
                 Missing env: {missing.join(", ")}
               </span>
             )}
             <div className="flex items-center gap-2 text-xs">
               <label className="opacity-70">System env:</label>
               <select
-                className="border rounded px-3 py-1 bg-white text-sm text-gray-900 hover:bg-gray-50 cursor-pointer h-8"
+                className="border border-gray-200 rounded px-3 py-1 bg-white text-sm text-gray-900 hover:bg-gray-50 cursor-pointer h-8"
                 value={systemVariant}
                 onChange={async (e) => {
                   const val = e.target.value as
@@ -560,7 +560,7 @@ export default function PreviewPane({
                     alt="ICPEP"
                     width={80}
                     height={32}
-                    className="h-8 w-auto rounded-sm border"
+                    className="h-8 w-auto rounded-sm border border-gray-200"
                   />
                 );
               if (isCisco)
@@ -570,7 +570,7 @@ export default function PreviewPane({
                     alt="Cisco"
                     width={80}
                     height={32}
-                    className="h-8 w-auto rounded-sm border"
+                    className="h-8 w-auto rounded-sm border border-gray-200"
                   />
                 );
               if (isArduino)
@@ -580,7 +580,7 @@ export default function PreviewPane({
                     alt="Arduino Day Philippines"
                     width={80}
                     height={32}
-                    className="h-8 w-auto rounded-sm border"
+                    className="h-8 w-auto rounded-sm border border-gray-200"
                   />
                 );
               if (isCyberph || isCyberphNoreply)
@@ -590,14 +590,14 @@ export default function PreviewPane({
                     alt="CyberPH"
                     width={80}
                     height={32}
-                    className="h-8 w-auto rounded-sm border"
+                    className="h-8 w-auto rounded-sm border border-gray-200"
                   />
                 );
               return null;
             })()}
             {systemVariant === "default" && (
               <>
-                <label className="px-3 py-1 rounded border text-sm bg-white text-gray-900 hover:bg-gray-50 cursor-pointer">
+                <label className="px-3 py-1 rounded border border-gray-200 text-sm bg-white text-gray-900 hover:bg-gray-50 cursor-pointer">
                   <input
                     type="file"
                     accept=".env,.txt"
@@ -616,7 +616,7 @@ export default function PreviewPane({
                 <button
                   type="button"
                   onClick={() => setShowPaste(true)}
-                  className="px-3 py-1 rounded border text-sm bg-white hover:bg-gray-50"
+                  className="px-3 py-1 rounded border border-gray-200 text-sm bg-white hover:bg-gray-50"
                 >
                   Paste .env
                 </button>
@@ -625,7 +625,7 @@ export default function PreviewPane({
                     type="button"
                     onClick={clearOverride}
                     disabled={uploading}
-                    className="px-3 py-1 rounded border text-sm bg-white hover:bg-gray-50 disabled:opacity-50"
+                    className="px-3 py-1 rounded border border-gray-200 text-sm bg-white hover:bg-gray-50 disabled:opacity-50"
                   >
                     Clear override
                   </button>
@@ -636,7 +636,7 @@ export default function PreviewPane({
               type="button"
               disabled={!ready}
               onClick={() => ready && onExportJson((row) => renderRow(row))}
-              className={`px-3 py-1 rounded border text-sm ${
+              className={`px-3 py-1 rounded border border-gray-200 text-sm ${
                 ready
                   ? "bg-gray-900 border-gray-900 text-white hover:bg-black"
                   : "opacity-50 cursor-not-allowed"
@@ -668,7 +668,7 @@ export default function PreviewPane({
                 } finally {
                 }
               }}
-              className={`px-3 py-1 rounded border text-sm ${
+              className={`px-3 py-1 rounded border border-gray-200 text-sm ${
                 ready && envOk !== false && !isSending && cooldownSec === 0
                   ? "bg-green-600 border-green-700 text-white hover:bg-green-700"
                   : "opacity-50 cursor-not-allowed"
@@ -796,7 +796,7 @@ export default function PreviewPane({
                 <button
                   onClick={() => setPreviewRowIndex((p) => Math.max(0, p - 1))}
                   disabled={previewRowIndex === 0}
-                  className="px-3 py-1 rounded border text-sm bg-white hover:bg-gray-50 disabled:opacity-50"
+                  className="px-3 py-1 rounded border border-gray-200 text-sm bg-white hover:bg-gray-50 disabled:opacity-50"
                 >
                   Previous
                 </button>
@@ -810,11 +810,54 @@ export default function PreviewPane({
                     )
                   }
                   disabled={!csv || previewRowIndex >= csv.rowCount - 1}
-                  className="px-3 py-1 rounded border text-sm bg-white hover:bg-gray-50 disabled:opacity-50"
+                  className="px-3 py-1 rounded border border-gray-200 text-sm bg-white hover:bg-gray-50 disabled:opacity-50"
                 >
                   Next
                 </button>
               </div>
+              {/* Attachments for current preview row */}
+              {(() => {
+                if (!csv || !mapping) return null;
+                const row = csv.rows[previewRowIndex];
+                if (!row) return null;
+                const email = row[mapping.recipient];
+                const attachments = email ? attachmentsByRecipient.get(String(email)) : null;
+                if (!attachments || attachments.length === 0) {
+                  return (
+                    <div className="text-xs text-gray-500 flex items-center gap-1.5">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                        <path fillRule="evenodd" d="M15.621 4.379a3 3 0 00-4.242 0l-7 7a3 3 0 004.241 4.243h.001l.497-.5a.75.75 0 011.064 1.057l-.498.501-.002.002a4.5 4.5 0 01-6.364-6.364l7-7a4.5 4.5 0 016.368 6.36l-3.455 3.553A2.625 2.625 0 119.52 9.52l3.45-3.451a.75.75 0 111.061 1.06l-3.45 3.451a1.125 1.125 0 001.587 1.595l3.454-3.553a3 3 0 000-4.242z" clipRule="evenodd" />
+                      </svg>
+                      No attachments for this recipient
+                    </div>
+                  );
+                }
+                return (
+                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <table className="w-full text-xs">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-3 py-1.5 text-left font-medium text-gray-700 border-b border-gray-200">Attachments ({attachments.length})</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {attachments.map((file, idx) => (
+                          <tr key={idx} className="border-b border-gray-200 last:border-b-0">
+                            <td className="px-3 py-1.5 text-gray-700">
+                              <span className="inline-flex items-center gap-1.5">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0">
+                                  <path d="M3 3.5A1.5 1.5 0 014.5 2h6.879a1.5 1.5 0 011.06.44l4.122 4.12A1.5 1.5 0 0117 7.622V16.5a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 013 16.5v-13z" />
+                                </svg>
+                                {file}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
               <iframe
                 srcDoc={previewHtml}
                 className="w-full h-96 border rounded bg-white"
