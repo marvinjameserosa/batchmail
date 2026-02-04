@@ -3,7 +3,6 @@ import Link from "next/link";
 import NavbarClient from "./components/ui/NavbarClient";
 import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
-import "driver.js/dist/driver.css";
 import "./globals.css";
 
 const geistSans = Geist({
