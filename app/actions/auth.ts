@@ -68,3 +68,43 @@ export async function logoutAction(): Promise<{ ok: true }> {
   });
   return { ok: true };
 }
+
+type CheckAuthResult =
+  | { authenticated: true }
+  | { authenticated: false };
+
+export async function checkAuthAction(): Promise<CheckAuthResult> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(AUTH_COOKIE)?.value;
+  
+  if (token) {
+    return { authenticated: true };
+  }
+  
+  return { authenticated: false };
+}
+
+type SignupCheckResult =
+  | { available: true }
+  | { available: false; reason: string };
+
+export async function checkSignupAvailabilityAction(
+  email: string
+): Promise<SignupCheckResult> {
+  const ADMIN_EMAIL_RAW = process.env.ADMIN_EMAIL;
+  const ADMIN_EMAIL = ADMIN_EMAIL_RAW?.trim().toLowerCase();
+
+  if (!email || typeof email !== "string") {
+    return { available: false, reason: "Invalid email provided" };
+  }
+
+  const emailNorm = email.trim().toLowerCase();
+
+  // Check if email matches admin (reserved)
+  if (ADMIN_EMAIL && emailNorm === ADMIN_EMAIL) {
+    return { available: false, reason: "This email is already registered" };
+  }
+
+  // Email is available for signup
+  return { available: true };
+}
