@@ -500,7 +500,7 @@ export default function PreviewPane({
 
   return (
     <>
-      <div className="rounded-lg border p-4 space-y-4">
+      <div className="rounded-lg border border-gray-200 p-4 space-y-4">
         <div
           className="flex items-center justify-between gap-3 flex-wrap"
           id="tutorial-env-controls"
@@ -509,19 +509,19 @@ export default function PreviewPane({
           <div className="flex items-center gap-2">
             {/* Variable insertion moved to Template tab */}
             {envOk === true && (
-              <span className="px-2 py-0.5 rounded border text-xs bg-green-50 border-green-200 text-green-800">
+              <span className="px-2 py-0.5 rounded border border-green-200 text-xs bg-green-50 text-green-800">
                 Sender env OK
               </span>
             )}
             {envOk === false && (
-              <span className="px-2 py-0.5 rounded border text-xs bg-red-50 border-red-200 text-red-800">
+              <span className="px-2 py-0.5 rounded border border-red-200 text-xs bg-red-50 text-red-800">
                 Missing env: {missing.join(", ")}
               </span>
             )}
             <div className="flex items-center gap-2 text-xs">
               <label className="opacity-70">System env:</label>
               <select
-                className="border rounded px-3 py-1 bg-white text-sm text-gray-900 hover:bg-gray-50 cursor-pointer h-8"
+                className="border border-gray-200 rounded px-3 py-1 bg-white text-sm text-gray-900 hover:bg-gray-50 cursor-pointer h-8"
                 value={systemVariant}
                 onChange={async (e) => {
                   const val = e.target.value as
@@ -560,7 +560,7 @@ export default function PreviewPane({
                     alt="ICPEP"
                     width={80}
                     height={32}
-                    className="h-8 w-auto rounded-sm border"
+                    className="h-8 w-auto rounded-sm border border-gray-200"
                   />
                 );
               if (isCisco)
@@ -570,7 +570,7 @@ export default function PreviewPane({
                     alt="Cisco"
                     width={80}
                     height={32}
-                    className="h-8 w-auto rounded-sm border"
+                    className="h-8 w-auto rounded-sm border border-gray-200"
                   />
                 );
               if (isArduino)
@@ -580,7 +580,7 @@ export default function PreviewPane({
                     alt="Arduino Day Philippines"
                     width={80}
                     height={32}
-                    className="h-8 w-auto rounded-sm border"
+                    className="h-8 w-auto rounded-sm border border-gray-200"
                   />
                 );
               if (isCyberph || isCyberphNoreply)
@@ -590,14 +590,14 @@ export default function PreviewPane({
                     alt="CyberPH"
                     width={80}
                     height={32}
-                    className="h-8 w-auto rounded-sm border"
+                    className="h-8 w-auto rounded-sm border border-gray-200"
                   />
                 );
               return null;
             })()}
             {systemVariant === "default" && (
               <>
-                <label className="px-3 py-1 rounded border text-sm bg-white text-gray-900 hover:bg-gray-50 cursor-pointer">
+                <label className="px-3 py-1 rounded border border-gray-200 text-sm bg-white text-gray-900 hover:bg-gray-50 cursor-pointer">
                   <input
                     type="file"
                     accept=".env,.txt"
@@ -616,7 +616,7 @@ export default function PreviewPane({
                 <button
                   type="button"
                   onClick={() => setShowPaste(true)}
-                  className="px-3 py-1 rounded border text-sm bg-white hover:bg-gray-50"
+                  className="px-3 py-1 rounded border border-gray-200 text-sm bg-white hover:bg-gray-50"
                 >
                   Paste .env
                 </button>
@@ -625,7 +625,7 @@ export default function PreviewPane({
                     type="button"
                     onClick={clearOverride}
                     disabled={uploading}
-                    className="px-3 py-1 rounded border text-sm bg-white hover:bg-gray-50 disabled:opacity-50"
+                    className="px-3 py-1 rounded border border-gray-200 text-sm bg-white hover:bg-gray-50 disabled:opacity-50"
                   >
                     Clear override
                   </button>
@@ -636,7 +636,7 @@ export default function PreviewPane({
               type="button"
               disabled={!ready}
               onClick={() => ready && onExportJson((row) => renderRow(row))}
-              className={`px-3 py-1 rounded border text-sm ${
+              className={`px-3 py-1 rounded border border-gray-200 text-sm ${
                 ready
                   ? "bg-gray-900 border-gray-900 text-white hover:bg-black"
                   : "opacity-50 cursor-not-allowed"
@@ -668,7 +668,7 @@ export default function PreviewPane({
                 } finally {
                 }
               }}
-              className={`px-3 py-1 rounded border text-sm ${
+              className={`px-3 py-1 rounded border border-gray-200 text-sm ${
                 ready && envOk !== false && !isSending && cooldownSec === 0
                   ? "bg-green-600 border-green-700 text-white hover:bg-green-700"
                   : "opacity-50 cursor-not-allowed"
@@ -796,7 +796,7 @@ export default function PreviewPane({
                 <button
                   onClick={() => setPreviewRowIndex((p) => Math.max(0, p - 1))}
                   disabled={previewRowIndex === 0}
-                  className="px-3 py-1 rounded border text-sm bg-white hover:bg-gray-50 disabled:opacity-50"
+                  className="px-3 py-1 rounded border border-gray-200 text-sm bg-white hover:bg-gray-50 disabled:opacity-50"
                 >
                   Previous
                 </button>
@@ -810,7 +810,7 @@ export default function PreviewPane({
                     )
                   }
                   disabled={!csv || previewRowIndex >= csv.rowCount - 1}
-                  className="px-3 py-1 rounded border text-sm bg-white hover:bg-gray-50 disabled:opacity-50"
+                  className="px-3 py-1 rounded border border-gray-200 text-sm bg-white hover:bg-gray-50 disabled:opacity-50"
                 >
                   Next
                 </button>

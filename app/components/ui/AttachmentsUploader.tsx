@@ -124,14 +124,14 @@ export default function AttachmentsUploader({ csv, mapping, value, onChange }: P
   };
 
   return (
-    <div className="rounded-lg border p-4 space-y-3">
+    <div className="rounded-lg border border-gray-200 p-4 space-y-3">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-medium">2) Upload Attachments (optional)</h2>
           <p className="text-xs opacity-80">File base name must match the CSV <strong>Name</strong> column (case-insensitive). Multiple files per name are allowed.</p>
         </div>
         <div className="flex items-center gap-2">
-          <label className="px-3 py-1 rounded border text-sm bg-white text-gray-900 hover:bg-gray-50 cursor-pointer">
+          <label className="px-3 py-1 rounded border border-gray-200 text-sm bg-white text-gray-900 hover:bg-gray-50 cursor-pointer">
             <input
               ref={inputRef}
               type="file"
@@ -142,7 +142,7 @@ export default function AttachmentsUploader({ csv, mapping, value, onChange }: P
             />
             {isUploading ? "Uploading…" : "Choose files…"}
           </label>
-          <button type="button" onClick={clearAll} disabled={computed.files === 0} className="px-3 py-1 rounded border text-sm bg-white hover:bg-gray-50 disabled:opacity-50">Clear</button>
+          <button type="button" onClick={clearAll} disabled={computed.files === 0} className="px-3 py-1 rounded border border-gray-200 text-sm bg-white hover:bg-gray-50 disabled:opacity-50">Clear</button>
         </div>
       </div>
 

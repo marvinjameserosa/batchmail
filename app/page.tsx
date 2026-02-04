@@ -292,7 +292,7 @@ function PageInner() {
         <p className="text-sm text-gray-800">Upload CSV, edit/upload Jinja-style HTML template, preview, and export. {totalCount ? `(${totalCount} rows)` : ""}</p>
       </header>
 
-      <div id="tutorial-tabs" className="rounded-xl border bg-white p-4 shadow-sm">
+      <div id="tutorial-tabs" className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
         <Tabs
           items={[
             {

@@ -158,7 +158,7 @@ export default function CsvUploader({ onParsed, currentMapping }: Props) {
   }, []);
 
   return (
-    <div className="rounded-lg border p-4 space-y-4">
+    <div className="rounded-lg border border-gray-200 p-4 space-y-4">
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-3">
           <div>
