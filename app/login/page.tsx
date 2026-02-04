@@ -37,17 +37,23 @@ function LoginInner() {
     setError(null);
     setLoading(true);
     try {
+      console.log("[v0] Starting login...");
       const data = await loginAction({ email, password });
+      console.log("[v0] Login response:", data);
       if (!data.ok) {
         setError(data.error || "Login failed");
       } else {
         // Show welcome modal then redirect with a slight delay so user sees confirmation
         setShowWelcome(true);
+        console.log("[v0] Login successful, will redirect to:", redirect);
+        console.log("[v0] Current cookies:", document.cookie);
         setTimeout(() => {
+          console.log("[v0] Redirecting now to:", redirect);
           window.location.href = redirect;
         }, 1000);
       }
     } catch (e) {
+      console.log("[v0] Login error:", e);
       setError((e as Error).message);
     } finally {
       setLoading(false);

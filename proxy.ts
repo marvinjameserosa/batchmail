@@ -43,10 +43,14 @@ export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const token = req.cookies.get(AUTH_COOKIE)?.value;
 
+  console.log("[v0] Proxy - pathname:", pathname, "token:", token ? "exists" : "missing");
+
   if (pathname.startsWith("/login")) {
+    console.log("[v0] Proxy - on login page, token:", token ? "exists" : "missing");
     if (token) {
       const dest = req.nextUrl.searchParams.get("redirect");
       const target = dest && dest.startsWith("/") ? dest : "/";
+      console.log("[v0] Proxy - redirecting from login to:", target);
       return NextResponse.redirect(new URL(target, req.url));
     }
     return NextResponse.next();
@@ -61,12 +65,14 @@ export function proxy(req: NextRequest) {
   }
 
   if (!token) {
+    console.log("[v0] Proxy - no token, redirecting to login");
     const loginUrl = new URL("/login", req.url);
     const target = `${pathname}${req.nextUrl.search || ""}`;
     loginUrl.searchParams.set("redirect", target || "/");
     return NextResponse.redirect(loginUrl);
   }
 
+  console.log("[v0] Proxy - authenticated, allowing access to:", pathname);
   return NextResponse.next();
 }
 
