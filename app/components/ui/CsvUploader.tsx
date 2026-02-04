@@ -225,45 +225,18 @@ export default function CsvUploader({ onParsed, currentMapping }: Props) {
       {/* Manual Entry Table */}
       {showManualEntry && (
         <div className="space-y-3">
-          <div className="overflow-x-auto rounded-md border border-gray-300">
+          <div className="overflow-x-auto border border-gray-200 rounded-lg">
             <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-300 bg-gray-50">
-                  {(csv?.headers || DEFAULT_HEADERS).map((header) => (
-                    <th key={header} className="px-3 py-2 text-left font-medium text-gray-700">
-                      {header}
-                    </th>
-                  ))}
-                  <th className="px-3 py-2 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={cancelManualEntry}
-                        className="rounded border border-gray-300 bg-white px-2 py-1 text-xs font-medium hover:bg-gray-50"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={addManualRow}
-                        className="rounded border border-gray-300 bg-white px-2 py-1 text-xs font-medium hover:bg-gray-50"
-                      >
-                        + Row
-                      </button>
-                    </div>
-                  </th>
-                </tr>
-              </thead>
               <tbody>
                 {/* Existing rows */}
                 {csv?.rows.map((row, rowIndex) => (
-                  <tr key={rowIndex} className="border-b border-gray-200 last:border-b-0">
+                  <tr key={rowIndex} className="border-b border-gray-200">
                     {(csv?.headers || DEFAULT_HEADERS).map((header) => (
-                      <td key={header} className="px-3 py-2 text-gray-900">
+                      <td key={header} className="px-3 py-2 text-gray-900 border-r border-gray-200 last:border-r-0">
                         {row[header] || ""}
                       </td>
                     ))}
-                    <td className="px-3 py-2 text-right">
+                    <td className="px-3 py-2 text-right border-l border-gray-200">
                       <button
                         type="button"
                         onClick={() => {
@@ -276,7 +249,7 @@ export default function CsvUploader({ onParsed, currentMapping }: Props) {
                           setCsv(parsed);
                           if (mapping) onParsed({ csv: parsed, mapping });
                         }}
-                        className="rounded border border-gray-300 bg-white px-2 py-1 text-xs font-medium hover:bg-gray-50"
+                        className="rounded border border-gray-200 bg-white px-2 py-1 text-xs font-medium hover:bg-gray-50"
                       >
                         Delete
                       </button>
@@ -284,15 +257,15 @@ export default function CsvUploader({ onParsed, currentMapping }: Props) {
                   </tr>
                 ))}
                 {/* Input row for adding new entry */}
-                <tr className="bg-gray-50">
+                <tr>
                   {(csv?.headers || DEFAULT_HEADERS).map((header) => (
-                    <td key={header} className="px-3 py-2">
+                    <td key={header} className="px-3 py-2 border-r border-gray-200 last:border-r-0">
                       <input
                         type={header.toLowerCase().includes("email") ? "email" : "text"}
                         value={manualRow[header] || ""}
                         onChange={(e) => setManualRow((prev) => ({ ...prev, [header]: e.target.value }))}
                         placeholder={header.toLowerCase().includes("email") ? "email@example.com" : `Enter ${header}`}
-                        className="w-full rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-600"
+                        className="w-full rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-600"
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
                             e.preventDefault();
@@ -302,7 +275,24 @@ export default function CsvUploader({ onParsed, currentMapping }: Props) {
                       />
                     </td>
                   ))}
-                  <td className="px-3 py-2"></td>
+                  <td className="px-3 py-2 border-l border-gray-200">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={cancelManualEntry}
+                        className="rounded border border-gray-200 bg-white px-2 py-1 text-xs font-medium hover:bg-gray-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={addManualRow}
+                        className="rounded border border-gray-200 bg-white px-2 py-1 text-xs font-medium hover:bg-gray-50"
+                      >
+                        + Row
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               </tbody>
             </table>
