@@ -29,12 +29,16 @@ const guessName = (headers: string[]) =>
 const guessSubject = (headers: string[]) =>
   headers.find((h) => /^(subject|title|headline|topic)$/i.test(h)) || null;
 
+const DEFAULT_HEADERS = ["email", "name", "subject"];
+
 export default function CsvUploader({ onParsed, currentMapping }: Props) {
   const [csv, setCsv] = useState<ParsedCsv | null>(null);
   const [mapping, setMapping] = useState<CsvMapping | null>(currentMapping ?? null);
   const [error, setError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string>("");
   const [dragActive, setDragActive] = useState<boolean>(false);
+  const [showManualEntry, setShowManualEntry] = useState<boolean>(false);
+  const [manualRow, setManualRow] = useState<Record<string, string>>({});
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const handleFile = useCallback((file: File) => {
@@ -77,6 +81,61 @@ export default function CsvUploader({ onParsed, currentMapping }: Props) {
     onParsed({ csv, mapping: next });
   };
 
+  const initializeManualEntry = () => {
+    if (!csv) {
+      // Create a new CSV structure with default headers
+      const headers = DEFAULT_HEADERS;
+      const parsed: ParsedCsv = { headers, rows: [], rowCount: 0 };
+      setCsv(parsed);
+      const nextMapping: CsvMapping = {
+        recipient: "email",
+        name: "name",
+        subject: "subject",
+      };
+      setMapping(nextMapping);
+      setManualRow({ email: "", name: "", subject: "" });
+    } else {
+      // Use existing headers
+      const newRow: Record<string, string> = {};
+      csv.headers.forEach((h) => (newRow[h] = ""));
+      setManualRow(newRow);
+    }
+    setShowManualEntry(true);
+  };
+
+  const addManualRow = () => {
+    const headers = csv?.headers || DEFAULT_HEADERS;
+    const currentMapping = mapping || { recipient: "email", name: "name", subject: "subject" };
+    
+    // Validate that recipient (email) is filled
+    const recipientKey = currentMapping.recipient || "email";
+    if (!manualRow[recipientKey]?.trim()) {
+      setError("Email/recipient field is required.");
+      return;
+    }
+
+    const newRows = [...(csv?.rows || []), { ...manualRow }];
+    const parsed: ParsedCsv = {
+      headers,
+      rows: newRows,
+      rowCount: newRows.length,
+    };
+    setCsv(parsed);
+    onParsed({ csv: parsed, mapping: currentMapping });
+    
+    // Reset manual row for next entry
+    const newRow: Record<string, string> = {};
+    headers.forEach((h) => (newRow[h] = ""));
+    setManualRow(newRow);
+    setError(null);
+  };
+
+  const cancelManualEntry = () => {
+    setShowManualEntry(false);
+    setManualRow({});
+    setError(null);
+  };
+
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -103,8 +162,8 @@ export default function CsvUploader({ onParsed, currentMapping }: Props) {
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold">1) Upload CSV</h2>
-            <p className="text-sm opacity-80">Provide a CSV with a header row. Drag & drop or use the button.</p>
+            <h2 className="text-lg font-semibold">1) Upload CSV or Add Manually</h2>
+            <p className="text-sm opacity-80">Provide a CSV with a header row, drag & drop, or add recipients manually.</p>
           </div>
           <div className="flex items-center gap-2">
             <input
@@ -124,6 +183,13 @@ export default function CsvUploader({ onParsed, currentMapping }: Props) {
             >
               <span className="inline-block">{fileName || "Choose CSV"}</span>
             </label>
+            <button
+              type="button"
+              onClick={initializeManualEntry}
+              className="rounded-md border border-green-600 bg-green-50 px-3 py-1.5 text-sm font-medium text-green-700 shadow-sm hover:bg-green-100"
+            >
+              + Add Manually
+            </button>
             {csv && (
               <button
                 type="button"
@@ -133,6 +199,8 @@ export default function CsvUploader({ onParsed, currentMapping }: Props) {
                   setMapping(null);
                   setError(null);
                   setFileName("");
+                  setShowManualEntry(false);
+                  setManualRow({});
                 }}
                 className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium shadow-sm hover:bg-gray-50"
               >
@@ -153,6 +221,48 @@ export default function CsvUploader({ onParsed, currentMapping }: Props) {
       </div>
 
       {error && <div className="text-sm text-red-600">{error}</div>}
+
+      {/* Manual Entry Form */}
+      {showManualEntry && (
+        <div className="rounded-md border border-green-200 bg-green-50 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-green-800">Add Recipient Manually</h3>
+            <button
+              type="button"
+              onClick={cancelManualEntry}
+              className="text-xs text-green-600 hover:text-green-800"
+            >
+              Cancel
+            </button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {(csv?.headers || DEFAULT_HEADERS).map((header) => (
+              <label key={header} className="flex flex-col gap-1">
+                <span className="text-xs font-medium text-green-700 capitalize">{header}</span>
+                <input
+                  type={header.toLowerCase().includes("email") ? "email" : "text"}
+                  value={manualRow[header] || ""}
+                  onChange={(e) => setManualRow((prev) => ({ ...prev, [header]: e.target.value }))}
+                  placeholder={header.toLowerCase().includes("email") ? "email@example.com" : `Enter ${header}`}
+                  className="w-full rounded-md border border-green-300 px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-600"
+                />
+              </label>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={addManualRow}
+              className="rounded-md bg-green-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-green-700"
+            >
+              Add Recipient
+            </button>
+            <span className="text-xs text-green-600">
+              {csv?.rowCount ? `${csv.rowCount} recipient${csv.rowCount !== 1 ? "s" : ""} added` : "No recipients yet"}
+            </span>
+          </div>
+        </div>
+      )}
 
       {csv && (
         <div className="space-y-4">
