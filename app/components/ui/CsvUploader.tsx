@@ -29,7 +29,7 @@ const guessName = (headers: string[]) =>
 const guessSubject = (headers: string[]) =>
   headers.find((h) => /^(subject|title|headline|topic)$/i.test(h)) || null;
 
-const DEFAULT_HEADERS = ["email", "name", "subject"];
+const DEFAULT_HEADERS = ["email", "name"];
 
 export default function CsvUploader({ onParsed, currentMapping }: Props) {
   const [csv, setCsv] = useState<ParsedCsv | null>(null);
@@ -90,10 +90,10 @@ export default function CsvUploader({ onParsed, currentMapping }: Props) {
       const nextMapping: CsvMapping = {
         recipient: "email",
         name: "name",
-        subject: "subject",
+        subject: null,
       };
       setMapping(nextMapping);
-      setManualRow({ email: "", name: "", subject: "" });
+      setManualRow({ email: "", name: "" });
     } else {
       // Use existing headers
       const newRow: Record<string, string> = {};
@@ -105,7 +105,7 @@ export default function CsvUploader({ onParsed, currentMapping }: Props) {
 
   const addManualRow = () => {
     const headers = csv?.headers || DEFAULT_HEADERS;
-    const currentMapping = mapping || { recipient: "email", name: "name", subject: "subject" };
+    const currentMapping = mapping || { recipient: "email", name: "name", subject: null };
     
     // Validate that recipient (email) is filled
     const recipientKey = currentMapping.recipient || "email";
@@ -222,44 +222,93 @@ export default function CsvUploader({ onParsed, currentMapping }: Props) {
 
       {error && <div className="text-sm text-red-600">{error}</div>}
 
-      {/* Manual Entry Form */}
+      {/* Manual Entry Table */}
       {showManualEntry && (
-        <div className="rounded-md border border-green-200 bg-green-50 p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-green-800">Add Recipient Manually</h3>
-            <button
-              type="button"
-              onClick={cancelManualEntry}
-              className="text-xs text-green-600 hover:text-green-800"
-            >
-              Cancel
-            </button>
+        <div className="space-y-3">
+          <div className="overflow-x-auto rounded-md border border-gray-300">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-300 bg-gray-50">
+                  {(csv?.headers || DEFAULT_HEADERS).map((header) => (
+                    <th key={header} className="px-3 py-2 text-left font-medium text-gray-700">
+                      {header}
+                    </th>
+                  ))}
+                  <th className="px-3 py-2 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={cancelManualEntry}
+                        className="rounded border border-gray-300 bg-white px-2 py-1 text-xs font-medium hover:bg-gray-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={addManualRow}
+                        className="rounded border border-gray-300 bg-white px-2 py-1 text-xs font-medium hover:bg-gray-50"
+                      >
+                        + Row
+                      </button>
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* Existing rows */}
+                {csv?.rows.map((row, rowIndex) => (
+                  <tr key={rowIndex} className="border-b border-gray-200 last:border-b-0">
+                    {(csv?.headers || DEFAULT_HEADERS).map((header) => (
+                      <td key={header} className="px-3 py-2 text-gray-900">
+                        {row[header] || ""}
+                      </td>
+                    ))}
+                    <td className="px-3 py-2 text-right">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newRows = csv.rows.filter((_, i) => i !== rowIndex);
+                          const parsed: ParsedCsv = {
+                            headers: csv.headers,
+                            rows: newRows,
+                            rowCount: newRows.length,
+                          };
+                          setCsv(parsed);
+                          if (mapping) onParsed({ csv: parsed, mapping });
+                        }}
+                        className="rounded border border-gray-300 bg-white px-2 py-1 text-xs font-medium hover:bg-gray-50"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {/* Input row for adding new entry */}
+                <tr className="bg-gray-50">
+                  {(csv?.headers || DEFAULT_HEADERS).map((header) => (
+                    <td key={header} className="px-3 py-2">
+                      <input
+                        type={header.toLowerCase().includes("email") ? "email" : "text"}
+                        value={manualRow[header] || ""}
+                        onChange={(e) => setManualRow((prev) => ({ ...prev, [header]: e.target.value }))}
+                        placeholder={header.toLowerCase().includes("email") ? "email@example.com" : `Enter ${header}`}
+                        className="w-full rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-600"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            addManualRow();
+                          }
+                        }}
+                      />
+                    </td>
+                  ))}
+                  <td className="px-3 py-2"></td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {(csv?.headers || DEFAULT_HEADERS).map((header) => (
-              <label key={header} className="flex flex-col gap-1">
-                <span className="text-xs font-medium text-green-700 capitalize">{header}</span>
-                <input
-                  type={header.toLowerCase().includes("email") ? "email" : "text"}
-                  value={manualRow[header] || ""}
-                  onChange={(e) => setManualRow((prev) => ({ ...prev, [header]: e.target.value }))}
-                  placeholder={header.toLowerCase().includes("email") ? "email@example.com" : `Enter ${header}`}
-                  className="w-full rounded-md border border-green-300 px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-600"
-                />
-              </label>
-            ))}
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={addManualRow}
-              className="rounded-md bg-green-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-green-700"
-            >
-              Add Recipient
-            </button>
-            <span className="text-xs text-green-600">
-              {csv?.rowCount ? `${csv.rowCount} recipient${csv.rowCount !== 1 ? "s" : ""} added` : "No recipients yet"}
-            </span>
+          <div className="text-xs text-gray-500">
+            {csv?.rowCount ? `${csv.rowCount} recipient${csv.rowCount !== 1 ? "s" : ""} added` : "No recipients yet"} — Press Enter or click "+ Row" to add
           </div>
         </div>
       )}
