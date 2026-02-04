@@ -179,14 +179,14 @@ export default function CsvUploader({ onParsed, currentMapping }: Props) {
             />
             <label
               htmlFor="csv-file-input"
-              className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium shadow-sm cursor-pointer hover:bg-gray-50 focus-within:ring-2 focus-within:ring-green-600"
+              className="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium shadow-sm cursor-pointer hover:bg-gray-50 focus-within:ring-2 focus-within:ring-green-600"
             >
               <span className="inline-block">{fileName || "Choose CSV"}</span>
             </label>
             <button
               type="button"
               onClick={initializeManualEntry}
-              className="rounded-md border border-green-600 bg-green-50 px-3 py-1.5 text-sm font-medium text-green-700 shadow-sm hover:bg-green-100"
+              className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium shadow-sm hover:bg-gray-50"
             >
               + Add Manually
             </button>
@@ -202,7 +202,7 @@ export default function CsvUploader({ onParsed, currentMapping }: Props) {
                   setShowManualEntry(false);
                   setManualRow({});
                 }}
-                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium shadow-sm hover:bg-gray-50"
+                className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium shadow-sm hover:bg-gray-50"
               >
                 Reset
               </button>
@@ -214,7 +214,7 @@ export default function CsvUploader({ onParsed, currentMapping }: Props) {
           onDragOver={onDrag}
           onDragLeave={onDrag}
           onDrop={onDrop}
-          className={`group relative rounded-md border border-dashed p-6 text-center transition-colors ${dragActive ? "border-green-500 bg-green-50" : "border-gray-300"}`}
+          className={`group relative rounded-md border border-dashed p-6 text-center transition-colors ${dragActive ? "border-green-500 bg-green-50" : "border-gray-200"}`}
         >
           <p className="text-sm">{dragActive ? "Release to upload CSV" : "Drag & drop CSV here or use the button above."}</p>
         </div>
@@ -310,7 +310,7 @@ export default function CsvUploader({ onParsed, currentMapping }: Props) {
             <label className="text-sm flex flex-col gap-1">
               <span className="text-xs font-medium opacity-80">Recipient column</span>
               <select
-                className="w-full rounded-md border px-2 py-1.5 text-sm bg-white border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600"
+                className="w-full rounded-md border px-2 py-1.5 text-sm bg-white border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-600"
                 value={mapping?.recipient || ""}
                 onChange={(e) => onChangeSelect("recipient", e.target.value)}
               >
@@ -322,7 +322,7 @@ export default function CsvUploader({ onParsed, currentMapping }: Props) {
             <label className="text-sm flex flex-col gap-1">
               <span className="text-xs font-medium opacity-80">Name column</span>
               <select
-                className="w-full rounded-md border px-2 py-1.5 text-sm bg-white border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600"
+                className="w-full rounded-md border px-2 py-1.5 text-sm bg-white border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-600"
                 value={mapping?.name || ""}
                 onChange={(e) => onChangeSelect("name", e.target.value)}
               >
@@ -334,7 +334,7 @@ export default function CsvUploader({ onParsed, currentMapping }: Props) {
             <label className="text-sm flex flex-col gap-1">
               <span className="text-xs font-medium opacity-80">Subject column (optional)</span>
               <select
-                className="w-full rounded-md border px-2 py-1.5 text-sm bg-white border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600"
+                className="w-full rounded-md border px-2 py-1.5 text-sm bg-white border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-600"
                 value={mapping?.subject || ""}
                 onChange={(e) => onChangeSelect("subject", e.target.value)}
               >
