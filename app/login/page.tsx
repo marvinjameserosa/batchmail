@@ -125,6 +125,7 @@ function LoginInner() {
               height={96}
               className="h-12 w-12 rounded-md shadow-sm animate-pop"
               unoptimized
+              priority
             />
             <div>
               <h1
