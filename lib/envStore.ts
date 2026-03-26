@@ -7,14 +7,7 @@ type EnvMap = {
   PORT_ALT?: string;
 };
 
-export const SYSTEM_VARIANTS = [
-  "default",
-  "icpep",
-  "cisco",
-  "arduinodayph",
-  "cyberph",
-  "cyberph-noreply",
-] as const;
+export const SYSTEM_VARIANTS = ["default"] as const;
 
 export type SystemVariant = (typeof SYSTEM_VARIANTS)[number];
 
@@ -33,12 +26,13 @@ const readEnv = (key: string) => {
 };
 
 const readPassword = (prefix: string) =>
-  readEnv(`${prefix}_SENDER_APP_PASSWORD`) ?? readEnv(`${prefix}_SENDER_PASSWORD`);
+  readEnv(prefix ? `${prefix}_SENDER_APP_PASSWORD` : "SENDER_APP_PASSWORD") ??
+  readEnv(prefix ? `${prefix}_SENDER_PASSWORD` : "SENDER_PASSWORD");
 
 const readSenderEnv = (prefix: string): EnvMap => ({
-  SENDER_EMAIL: readEnv(`${prefix}_SENDER_EMAIL`),
+  SENDER_EMAIL: readEnv(prefix ? `${prefix}_SENDER_EMAIL` : "SENDER_EMAIL"),
   SENDER_APP_PASSWORD: readPassword(prefix),
-  SENDER_NAME: readEnv(`${prefix}_SENDER_NAME`),
+  SENDER_NAME: readEnv(prefix ? `${prefix}_SENDER_NAME` : "SENDER_NAME"),
 });
 
 export function listProfiles(): string[] {
@@ -74,31 +68,10 @@ export function getSystemVariant(): SystemVariant {
   return activeSystemVariant;
 }
 
-const readCyberphEnv = (prefix: string, fallbackPrefix = "CYBERPH"): EnvMap => ({
-  SENDER_EMAIL:
-    readEnv(`${prefix}_SENDER_EMAIL`) ?? readEnv(`${fallbackPrefix}_SENDER_EMAIL`),
-  SENDER_APP_PASSWORD:
-    readPassword(prefix) ?? readPassword(fallbackPrefix),
-  SENDER_NAME:
-    readEnv(`${prefix}_SENDER_NAME`) ?? readEnv(`${fallbackPrefix}_SENDER_NAME`),
-  HOST_DOMAIN:
-    readEnv(`${prefix}_HOST_DOMAIN`) ?? readEnv(`${fallbackPrefix}_HOST_DOMAIN`),
-  PORT: readEnv(`${prefix}_PORT`) ?? readEnv(`${fallbackPrefix}_PORT`),
-  PORT_ALT: readEnv(`${prefix}_PORT_ALT`) ?? readEnv(`${fallbackPrefix}_PORT_ALT`),
-});
-
 export function getEnvForVariant(variant: SystemVariant): EnvMap {
   switch (variant) {
-    case "icpep":
-      return readSenderEnv("ICPEP");
-    case "cisco":
-      return readSenderEnv("CISCO");
-    case "arduinodayph":
-      return readSenderEnv("ARDUINODAYPH");
-    case "cyberph":
-      return readCyberphEnv("CYBERPH");
-    case "cyberph-noreply":
-      return readCyberphEnv("CYBERPH_NOREPLY", "CYBERPH");
+    case "default":
+      return readSenderEnv("");
     default:
       return {};
   }

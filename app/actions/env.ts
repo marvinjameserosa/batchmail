@@ -13,10 +13,14 @@ import {
   type SystemVariant,
 } from "@/lib/envStore";
 
-const REQUIRED = ["SENDER_EMAIL", "SENDER_APP_PASSWORD", "SENDER_NAME"] as const;
+const REQUIRED = [
+  "SENDER_EMAIL",
+  "SENDER_APP_PASSWORD",
+  "SENDER_NAME",
+] as const;
 const KEYS = ["SENDER_EMAIL", "SENDER_APP_PASSWORD", "SENDER_NAME"] as const;
 
-type RequiredKey = typeof REQUIRED[number];
+type RequiredKey = (typeof REQUIRED)[number];
 
 type EnvStatus = {
   ok: boolean;
@@ -44,11 +48,16 @@ function parseEnv(text: string): Record<string, string> {
   return out;
 }
 
-export async function getEnvStatusAction(variantParam?: string | null): Promise<EnvStatus> {
-  const variant = (SYSTEM_VARIANTS as readonly string[]).includes(variantParam || "")
+export async function getEnvStatusAction(
+  variantParam?: string | null,
+): Promise<EnvStatus> {
+  const variant = (SYSTEM_VARIANTS as readonly string[]).includes(
+    variantParam || "",
+  )
     ? (variantParam as SystemVariant)
     : getSystemVariant();
-  const override = variant === "default" ? getActiveEnv() : getEnvForVariant(variant);
+  const override =
+    variant === "default" ? getActiveEnv() : getEnvForVariant(variant);
   const present: Record<RequiredKey, boolean> = {
     SENDER_EMAIL: !!override.SENDER_EMAIL,
     SENDER_APP_PASSWORD: !!override.SENDER_APP_PASSWORD,
@@ -65,19 +74,20 @@ export async function getEnvStatusAction(variantParam?: string | null): Promise<
       REQUIRED.map((k) => [
         k,
         override[k] ? (usingProfile ? "profile" : "env") : "missing",
-      ])
+      ]),
     ) as Record<RequiredKey, "profile" | "env" | "missing">,
     activeProfile: getActiveProfileName(),
     profiles: listProfiles(),
     systemVariant: variant,
-    hint:
-      "Create a .env.local file in the project root with SENDER_EMAIL, SENDER_APP_PASSWORD (e.g. Gmail App Password), and SENDER_NAME. Restart the server after changes.",
+    hint: "Create a .env.local file in the project root with SENDER_EMAIL, SENDER_APP_PASSWORD (e.g. Gmail App Password), and SENDER_NAME. Restart the server after changes.",
     example:
       "SENDER_EMAIL=you@example.com\nSENDER_APP_PASSWORD=abcd abcd abcd abcd\nSENDER_NAME=Your Name",
   };
 }
 
-export async function uploadEnvAction(input: FormData | { envText: string; profile?: string }) {
+export async function uploadEnvAction(
+  input: FormData | { envText: string; profile?: string },
+) {
   let envText = "";
   let profileName = "";
 
@@ -124,26 +134,12 @@ export async function clearEnvAction() {
 }
 
 export async function setVariantAction(variant: string) {
-  const allowed = new Set([
-    "default",
-    "icpep",
-    "cisco",
-    "arduinodayph",
-    "cyberph",
-    "cyberph-noreply",
-  ]);
-  const normalized = typeof variant === "string" ? variant.toLowerCase() : "default";
+  const allowed = new Set(["default"]);
+  const normalized =
+    typeof variant === "string" ? variant.toLowerCase() : "default";
   if (!allowed.has(normalized)) {
     return { ok: false, error: "Invalid variant" } as const;
   }
-  setSystemVariant(
-    normalized as
-      | "default"
-      | "icpep"
-      | "cisco"
-      | "arduinodayph"
-      | "cyberph"
-      | "cyberph-noreply"
-  );
+  setSystemVariant(normalized as "default");
   return { ok: true, variant: normalized } as const;
 }
