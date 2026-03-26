@@ -2,9 +2,6 @@ type EnvMap = {
   SENDER_EMAIL?: string;
   SENDER_APP_PASSWORD?: string;
   SENDER_NAME?: string;
-  HOST_DOMAIN?: string;
-  PORT?: string;
-  PORT_ALT?: string;
 };
 
 export const SYSTEM_VARIANTS = ["default"] as const;

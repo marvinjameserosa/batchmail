@@ -1,11 +1,9 @@
 "use server";
 
 import {
-  SYSTEM_VARIANTS,
   getActiveEnv,
   getActiveProfileName,
   getEnvForVariant,
-  getSystemVariant,
   listProfiles,
   setProfile,
   clearAllProfiles,
@@ -51,20 +49,25 @@ function parseEnv(text: string): Record<string, string> {
 export async function getEnvStatusAction(
   variantParam?: string | null,
 ): Promise<EnvStatus> {
-  const variant = (SYSTEM_VARIANTS as readonly string[]).includes(
-    variantParam || "",
-  )
-    ? (variantParam as SystemVariant)
-    : getSystemVariant();
-  const override =
-    variant === "default" ? getActiveEnv() : getEnvForVariant(variant);
+  const variant = "default" as SystemVariant;
+
+  const systemEnv = getEnvForVariant("default");
+  const profileEnv = getActiveProfileName() ? getActiveEnv() : {};
+  
+  // Merge: profile wins if set, else system
+  const override: Record<string, string | undefined> = {
+    SENDER_EMAIL: profileEnv.SENDER_EMAIL || systemEnv.SENDER_EMAIL,
+    SENDER_APP_PASSWORD: profileEnv.SENDER_APP_PASSWORD || systemEnv.SENDER_APP_PASSWORD,
+    SENDER_NAME: profileEnv.SENDER_NAME || systemEnv.SENDER_NAME,
+  };
+
   const present: Record<RequiredKey, boolean> = {
     SENDER_EMAIL: !!override.SENDER_EMAIL,
     SENDER_APP_PASSWORD: !!override.SENDER_APP_PASSWORD,
     SENDER_NAME: !!override.SENDER_NAME,
   };
   const missing = REQUIRED.filter((k) => !present[k]);
-  const usingProfile = variant === "default" && !!getActiveProfileName();
+  const usingProfile = !!getActiveProfileName();
 
   return {
     ok: missing.length === 0,
@@ -73,7 +76,7 @@ export async function getEnvStatusAction(
     source: Object.fromEntries(
       REQUIRED.map((k) => [
         k,
-        override[k] ? (usingProfile ? "profile" : "env") : "missing",
+        profileEnv[k] ? "profile" : (systemEnv[k] ? "env" : "missing"),
       ]),
     ) as Record<RequiredKey, "profile" | "env" | "missing">,
     activeProfile: getActiveProfileName(),

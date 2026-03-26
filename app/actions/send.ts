@@ -3,13 +3,7 @@
 import { normalizeNameKey } from "@/lib/normalizeName";
 import nodemailer from "nodemailer";
 import nunjucks from "nunjucks";
-import {
-  SYSTEM_VARIANTS,
-  getActiveEnv,
-  getEnvForVariant,
-  getSystemVariant,
-  type SystemVariant,
-} from "@/lib/envStore";
+import { getActiveEnv } from "@/lib/envStore";
 
 type Mapping = { recipient: string; name: string; subject?: string | null };
 export type Row = Record<string, string>;
@@ -24,13 +18,7 @@ export type SendPayload = {
   >;
   delayMs?: number;
   jitterMs?: number;
-  systemVariant?:
-    | "default"
-    | "icpep"
-    | "cisco"
-    | "arduinodayph"
-    | "cyberph"
-    | "cyberph-noreply";
+  systemVariant?: "default";
 };
 
 export type SendItem = {
@@ -50,7 +38,7 @@ function renderTemplate(
   html: string,
   subject: string | undefined,
   row: Record<string, string>,
-  mapping: Mapping
+  mapping: Mapping,
 ) {
   const ctx: Record<string, unknown> = {
     ...row,
@@ -88,60 +76,42 @@ export async function sendBatchAction(payload: SendPayload) {
     return { ok: false, error: "Missing required fields" } as const;
   }
 
-  const variant = (SYSTEM_VARIANTS as readonly string[]).includes(
-    requestedVariant || ""
-  )
-    ? (requestedVariant as SystemVariant)
-    : getSystemVariant();
-  const override = variant === "default" ? getActiveEnv() : getEnvForVariant(variant);
+  const override = getActiveEnv();
   const SENDER_EMAIL = override.SENDER_EMAIL || process.env.SENDER_EMAIL;
+
   const SENDER_APP_PASSWORD =
     override.SENDER_APP_PASSWORD || process.env.SENDER_APP_PASSWORD;
-  const SENDER_NAME = override.SENDER_NAME || process.env.SENDER_NAME || SENDER_EMAIL;
+  const SENDER_NAME =
+    override.SENDER_NAME || process.env.SENDER_NAME || SENDER_EMAIL;
 
   if (!SENDER_EMAIL || !SENDER_APP_PASSWORD) {
     return { ok: false, error: "Sender env vars missing" } as const;
   }
 
-  const isCyberph = variant === "cyberph" || variant === "cyberph-noreply";
-  const createCyberphTransport = (port: number) =>
-    nodemailer.createTransport({
-      host: override.HOST_DOMAIN,
-      port,
-      secure: port === 465,
-      auth: { user: SENDER_EMAIL, pass: SENDER_APP_PASSWORD },
-    });
-  const transporter = isCyberph
-    ? createCyberphTransport(Number(override.PORT))
-    : nodemailer.createTransport({
-        service: "gmail",
-        auth: { user: SENDER_EMAIL, pass: SENDER_APP_PASSWORD },
-      });
-  const altPort = isCyberph ? Number(override.PORT_ALT) : NaN;
-  const sendWithFallback = async (message: nodemailer.SendMailOptions) => {
-    try {
-      return await transporter.sendMail(message);
-    } catch (err) {
-      if (isCyberph && Number.isFinite(altPort)) {
-        const altTransport = createCyberphTransport(altPort);
-        return await altTransport.sendMail(message);
-      }
-      throw err;
-    }
-  };
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: { user: SENDER_EMAIL, pass: SENDER_APP_PASSWORD },
+  });
 
   const filtered = rows.filter((r) => r[mapping.recipient]);
   const items: SendItem[] = [];
   let sent = 0;
   let failed = 0;
   const delay = typeof delayMs === "number" && delayMs > 0 ? delayMs : 2000;
-  const jitter = typeof jitterMs === "number" && jitterMs >= 0 ? Math.floor(jitterMs) : 250;
+  const jitter =
+    typeof jitterMs === "number" && jitterMs >= 0 ? Math.floor(jitterMs) : 250;
 
   for (let index = 0; index < filtered.length; index += 1) {
     const r = filtered[index];
-    const { body, subj } = renderTemplate(template, subjectTemplate, r, mapping);
+    const { body, subj } = renderTemplate(
+      template,
+      subjectTemplate,
+      r,
+      mapping,
+    );
     const nameKey = normalizeNameKey(r[mapping.name] || "");
-    const atts = nameKey && attachmentsByName ? attachmentsByName[nameKey] || [] : [];
+    const atts =
+      nameKey && attachmentsByName ? attachmentsByName[nameKey] || [] : [];
 
     try {
       const info = await sendWithFallback({
