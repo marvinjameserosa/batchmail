@@ -18,7 +18,7 @@ export type SendPayload = {
   >;
   delayMs?: number;
   jitterMs?: number;
-  systemVariant?: "default";
+  systemVariant?: "default" | "icpep" | "cisco" | "cyberph" | "cyberph-noreply";
 };
 
 export type SendItem = {
@@ -114,7 +114,7 @@ export async function sendBatchAction(payload: SendPayload) {
       nameKey && attachmentsByName ? attachmentsByName[nameKey] || [] : [];
 
     try {
-      const info = await sendWithFallback({
+      const info = await transporter.sendMail({
         from: `${SENDER_NAME} <${SENDER_EMAIL}>`,
         to: r[mapping.recipient],
         subject: subj,
