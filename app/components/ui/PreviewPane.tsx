@@ -4,19 +4,12 @@ import { normalizeNameKey } from "@/lib/normalizeName";
 import {
   clearEnvAction,
   getEnvStatusAction,
-  setVariantAction,
   uploadEnvAction,
 } from "@/app/actions/env";
 import { sendBatchAction } from "@/app/actions/send";
-import Image from "next/image";
 import nunjucks from "nunjucks";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import type { CsvMapping, ParsedCsv } from "./CsvUploader";
 // email editing is performed in the Template tab
 import type { AttachIndex } from "./AttachmentsUploader";
@@ -31,12 +24,15 @@ const normalizePreviewHtml = (html: string) => {
     return `<!DOCTYPE html><html><head>${PREVIEW_RESET_STYLE}</head><body></body></html>`;
   }
   if (/<head[\s>]/i.test(trimmed)) {
-    return trimmed.replace(/<head([^>]*)>/i, (_, attrs = "") => `<head${attrs}>${PREVIEW_RESET_STYLE}`);
+    return trimmed.replace(
+      /<head([^>]*)>/i,
+      (_, attrs = "") => `<head${attrs}>${PREVIEW_RESET_STYLE}`,
+    );
   }
   if (/<html[\s>]/i.test(trimmed)) {
     return trimmed.replace(
       /<html([^>]*)>/i,
-      (_, attrs = "") => `<html${attrs}><head>${PREVIEW_RESET_STYLE}</head>`
+      (_, attrs = "") => `<html${attrs}><head>${PREVIEW_RESET_STYLE}</head>`,
     );
   }
   return `<!DOCTYPE html><html><head>${PREVIEW_RESET_STYLE}</head><body>${trimmed}</body></html>`;
@@ -95,12 +91,7 @@ export default function PreviewPane({
   const [envOk, setEnvOk] = useState<boolean | null>(null);
   const [missing, setMissing] = useState<string[]>([]);
   const [systemVariant, setSystemVariantState] = useState<
-    "default"
-    | "icpep"
-    | "cisco"
-    | "arduinodayph"
-    | "cyberph"
-    | "cyberph-noreply"
+    "default" | "icpep" | "cisco" | "cyberph" | "cyberph-noreply"
   >("default");
   // Default (.env) variant supports optional one-off upload/paste overrides (not persistent profiles)
   const [showPaste, setShowPaste] = useState(false);
@@ -114,27 +105,18 @@ export default function PreviewPane({
       const d = await getEnvStatusAction(variantOverride ?? null);
       setEnvOk(!!d.ok);
       setMissing(Array.isArray(d.missing) ? d.missing : []);
-      if (
-        d.systemVariant === "icpep" ||
-        d.systemVariant === "cisco" ||
-        d.systemVariant === "arduinodayph" ||
-        d.systemVariant === "cyberph" ||
-        d.systemVariant === "cyberph-noreply"
-      )
-        setSystemVariantState(d.systemVariant);
-      else setSystemVariantState("default");
+      setSystemVariantState("default");
     },
-    []
+    [],
   );
 
   useEffect(() => {
     let mounted = true;
-    refreshEnvStatus()
-      .catch(() => {
-        if (!mounted) return;
-        setEnvOk(false);
-        setMissing(["SENDER_EMAIL", "SENDER_APP_PASSWORD", "SENDER_NAME"]);
-      });
+    refreshEnvStatus().catch(() => {
+      if (!mounted) return;
+      setEnvOk(false);
+      setMissing(["SENDER_EMAIL", "SENDER_APP_PASSWORD", "SENDER_NAME"]);
+    });
     return () => {
       mounted = false;
     };
@@ -168,7 +150,7 @@ export default function PreviewPane({
         return `<!-- Render error: ${msg} -->\n` + template;
       }
     },
-    [mapping, template]
+    [mapping, template],
   );
 
   const previewHtml = useMemo(() => {
@@ -199,14 +181,14 @@ export default function PreviewPane({
             const isPdf = mime.includes("pdf") || filename.endsWith(".pdf");
             return Boolean(isPdf && size >= min && size <= max);
           })
-        : false
+        : false,
     );
   }, [attachmentsByName]);
 
   const attachmentsPresent = useMemo(() => {
     if (!attachmentsByName) return false;
     return Object.values(attachmentsByName).some(
-      (arr) => Array.isArray(arr) && arr.length > 0
+      (arr) => Array.isArray(arr) && arr.length > 0,
     );
   }, [attachmentsByName]);
 
@@ -244,7 +226,8 @@ export default function PreviewPane({
   }, [csv, mapping]);
 
   const attachmentsByRecipient = useMemo(() => {
-    if (!csv || !mapping || !attachmentsByName) return new Map<string, string[]>();
+    if (!csv || !mapping || !attachmentsByName)
+      return new Map<string, string[]>();
     const map = new Map<string, string[]>();
     for (const row of csv.rows as Array<Record<string, string>>) {
       const email = row[mapping.recipient];
@@ -278,11 +261,11 @@ export default function PreviewPane({
 
   const allUsed = useMemo(
     () => Array.from(new Set([...usedSubjectVars, ...usedBodyVars])),
-    [usedSubjectVars, usedBodyVars]
+    [usedSubjectVars, usedBodyVars],
   );
   const invalidUsed = useMemo(
     () => allUsed.filter((v) => !availableVars.includes(v)),
-    [allUsed, availableVars]
+    [allUsed, availableVars],
   );
 
   const insertSubjectVariable = useCallback(
@@ -305,34 +288,11 @@ export default function PreviewPane({
         input.setSelectionRange(caret, caret);
       });
     },
-    [onSubjectChange, subjectTemplate]
+    [onSubjectChange, subjectTemplate],
   );
 
-  const variantLabel = useMemo(
-    () =>
-      systemVariant === "icpep"
-        ? "ICPEP SE - PUP Manila"
-        : systemVariant === "cisco"
-        ? "CNCP - Cisco NetConnect PUP"
-        : systemVariant === "cyberph"
-        ? "CyberPH"
-        : systemVariant === "cyberph-noreply"
-        ? "CyberPH - noreply"
-        : "Default (.env)",
-    [systemVariant]
-  );
-
-  const variantLogo = useMemo(
-    () =>
-      systemVariant === "icpep"
-        ? "/icpep-logo.jpg"
-        : systemVariant === "cisco"
-        ? "/cisco-logo.jpg"
-        : systemVariant === "cyberph" || systemVariant === "cyberph-noreply"
-        ? "/cyberph-logo.svg"
-        : null,
-    [systemVariant]
-  );
+  const variantLabel = "Default (.env)";
+  const variantLogo = null;
 
   const doSendEmails = useCallback(async () => {
     if (!ready || !csv || !mapping) return;
@@ -377,7 +337,8 @@ export default function PreviewPane({
               {
                 to,
                 status: "error",
-                error: "error" in res ? res.error || "Batch failed" : "Batch failed",
+                error:
+                  "error" in res ? res.error || "Batch failed" : "Batch failed",
                 attachments: 0,
                 timestamp: new Date().toISOString(),
               },
@@ -441,7 +402,7 @@ export default function PreviewPane({
         alert(
           `.env upload processed but missing: ${
             data.missing?.join(", ") || "unknown"
-          }`
+          }`,
         );
       } else {
         setOverrideApplied(true);
@@ -470,7 +431,7 @@ export default function PreviewPane({
         alert(
           `Paste processed but missing: ${
             data.missing?.join(", ") || "unknown"
-          }`
+          }`,
         );
       } else {
         setOverrideApplied(true);
@@ -520,81 +481,10 @@ export default function PreviewPane({
             )}
             <div className="flex items-center gap-2 text-xs">
               <label className="opacity-70">System env:</label>
-              <select
-                className="border border-gray-200 rounded px-3 py-1 bg-white text-sm text-gray-900 hover:bg-gray-50 cursor-pointer h-8"
-                value={systemVariant}
-                onChange={async (e) => {
-                  const val = e.target.value as
-                    | "default"
-                    | "icpep"
-                    | "cisco"
-                    | "arduinodayph"
-                    | "cyberph"
-                    | "cyberph-noreply";
-                  try {
-                    await setVariantAction(val);
-                  } catch {}
-                  await refreshEnvStatus(val);
-                }}
-              >
-                <option value="default">Default (.env)</option>
-                <option value="icpep">ICPEP SE - PUP Manila</option>
-                <option value="cisco">CNCP - Cisco NetConnect PUP</option>
-                <option value="arduinodayph">Arduino Day Philippines</option>
-                <option value="cyberph">CyberPH</option>
-                <option value="cyberph-noreply">CyberPH - noreply</option>
-              </select>
+              <span className="border border-gray-200 rounded px-3 py-1 bg-white text-sm text-gray-900 h-8 flex items-center">
+                Default (.env)
+              </span>
             </div>
-            {/* Brand logo based on selection */}
-            {(() => {
-              // Decide brand from system variant
-              const isIcpep = systemVariant === "icpep";
-              const isCisco = systemVariant === "cisco";
-              const isArduino = systemVariant === "arduinodayph";
-              const isCyberph = systemVariant === "cyberph";
-              const isCyberphNoreply = systemVariant === "cyberph-noreply";
-              if (isIcpep)
-                return (
-                  <Image
-                    src="/icpep-logo.jpg"
-                    alt="ICPEP"
-                    width={80}
-                    height={32}
-                    className="h-8 w-auto rounded-sm border border-gray-200"
-                  />
-                );
-              if (isCisco)
-                return (
-                  <Image
-                    src="/cisco-logo.jpg"
-                    alt="Cisco"
-                    width={80}
-                    height={32}
-                    className="h-8 w-auto rounded-sm border border-gray-200"
-                  />
-                );
-              if (isArduino)
-                return (
-                  <Image
-                    src="/arduinoday.jpg"
-                    alt="Arduino Day Philippines"
-                    width={80}
-                    height={32}
-                    className="h-8 w-auto rounded-sm border border-gray-200"
-                  />
-                );
-              if (isCyberph || isCyberphNoreply)
-                return (
-                  <Image
-                    src="/cyberph-logo.svg"
-                    alt="CyberPH"
-                    width={80}
-                    height={32}
-                    className="h-8 w-auto rounded-sm border border-gray-200"
-                  />
-                );
-              return null;
-            })()}
             {systemVariant === "default" && (
               <>
                 <label className="px-3 py-1 rounded border border-gray-200 text-sm bg-white text-gray-900 hover:bg-gray-50 cursor-pointer">
@@ -610,8 +500,8 @@ export default function PreviewPane({
                   {uploading
                     ? "Uploading…"
                     : overrideApplied
-                    ? "Re-upload .env"
-                    : "Upload .env"}
+                      ? "Re-upload .env"
+                      : "Upload .env"}
                 </label>
                 <button
                   type="button"
@@ -727,7 +617,10 @@ export default function PreviewPane({
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
-          <div className="lg:col-span-1 border rounded" id="tutorial-recipient-list">
+          <div
+            className="lg:col-span-1 border rounded"
+            id="tutorial-recipient-list"
+          >
             <div className="px-3 py-2 text-sm bg-gray-50 border-b font-medium flex items-center justify-between">
               <span>Recipients</span>
               <span className="text-xs opacity-70">{recipients.length}</span>
@@ -806,7 +699,7 @@ export default function PreviewPane({
                 <button
                   onClick={() =>
                     setPreviewRowIndex((p) =>
-                      Math.min((csv?.rowCount ?? 1) - 1, p + 1)
+                      Math.min((csv?.rowCount ?? 1) - 1, p + 1),
                     )
                   }
                   disabled={!csv || previewRowIndex >= csv.rowCount - 1}
@@ -821,12 +714,23 @@ export default function PreviewPane({
                 const row = csv.rows[previewRowIndex];
                 if (!row) return null;
                 const email = row[mapping.recipient];
-                const attachments = email ? attachmentsByRecipient.get(String(email)) : null;
+                const attachments = email
+                  ? attachmentsByRecipient.get(String(email))
+                  : null;
                 if (!attachments || attachments.length === 0) {
                   return (
                     <div className="text-xs text-gray-500 flex items-center gap-1.5">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
-                        <path fillRule="evenodd" d="M15.621 4.379a3 3 0 00-4.242 0l-7 7a3 3 0 004.241 4.243h.001l.497-.5a.75.75 0 011.064 1.057l-.498.501-.002.002a4.5 4.5 0 01-6.364-6.364l7-7a4.5 4.5 0 016.368 6.36l-3.455 3.553A2.625 2.625 0 119.52 9.52l3.45-3.451a.75.75 0 111.061 1.06l-3.45 3.451a1.125 1.125 0 001.587 1.595l3.454-3.553a3 3 0 000-4.242z" clipRule="evenodd" />
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        className="w-3.5 h-3.5"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M15.621 4.379a3 3 0 00-4.242 0l-7 7a3 3 0 004.241 4.243h.001l.497-.5a.75.75 0 011.064 1.057l-.498.501-.002.002a4.5 4.5 0 01-6.364-6.364l7-7a4.5 4.5 0 016.368 6.36l-3.455 3.553A2.625 2.625 0 119.52 9.52l3.45-3.451a.75.75 0 111.061 1.06l-3.45 3.451a1.125 1.125 0 001.587 1.595l3.454-3.553a3 3 0 000-4.242z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                       No attachments for this recipient
                     </div>
@@ -837,15 +741,25 @@ export default function PreviewPane({
                     <table className="w-full text-xs">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="px-3 py-1.5 text-left font-medium text-gray-700 border-b border-gray-200">Attachments ({attachments.length})</th>
+                          <th className="px-3 py-1.5 text-left font-medium text-gray-700 border-b border-gray-200">
+                            Attachments ({attachments.length})
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
                         {attachments.map((file, idx) => (
-                          <tr key={idx} className="border-b border-gray-200 last:border-b-0">
+                          <tr
+                            key={idx}
+                            className="border-b border-gray-200 last:border-b-0"
+                          >
                             <td className="px-3 py-1.5 text-gray-700">
                               <span className="inline-flex items-center gap-1.5">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 20 20"
+                                  fill="currentColor"
+                                  className="w-3.5 h-3.5 text-gray-400 flex-shrink-0"
+                                >
                                   <path d="M3 3.5A1.5 1.5 0 014.5 2h6.879a1.5 1.5 0 011.06.44l4.122 4.12A1.5 1.5 0 0117 7.622V16.5a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 013 16.5v-13z" />
                                 </svg>
                                 {file}
@@ -869,7 +783,10 @@ export default function PreviewPane({
 
         {/* Batches preview (always visible when recipients exist) */}
         {batchPreview.length > 0 && (
-          <div className="border rounded p-3 bg-white space-y-2" id="tutorial-batch-preview">
+          <div
+            className="border rounded p-3 bg-white space-y-2"
+            id="tutorial-batch-preview"
+          >
             <div className="text-sm font-medium flex items-center gap-2">
               <span>Batches (preview)</span>
               <span className="text-xs opacity-70">
@@ -908,8 +825,8 @@ export default function PreviewPane({
               <div className="text-[11px] text-gray-600">
                 {requiresSingleBatch ? (
                   <span className="text-yellow-800">
-                    Large 1-2 MB PDF attachments detected. Sending is locked
-                    to 1 email per batch.
+                    Large 1-2 MB PDF attachments detected. Sending is locked to
+                    1 email per batch.
                   </span>
                 ) : attachmentsPresent ? (
                   <span>
@@ -932,7 +849,8 @@ export default function PreviewPane({
                     <div className="font-medium">Batch {b.batch}</div>
                     <div className="text-gray-700 space-y-1">
                       {b.recipients.map((email) => {
-                        const attachments = attachmentsByRecipient.get(email) || [];
+                        const attachments =
+                          attachmentsByRecipient.get(email) || [];
                         return (
                           <div
                             key={`${b.batch}-${email}`}
@@ -950,7 +868,8 @@ export default function PreviewPane({
                                   ({attachments.slice(0, 2).join(", ")}
                                   {attachments.length > 2
                                     ? ` +${attachments.length - 2}`
-                                    : ""})
+                                    : ""}
+                                  )
                                 </span>
                               </span>
                             )}
@@ -1036,7 +955,7 @@ export default function PreviewPane({
                     {Math.max(
                       0,
                       sendModalTotal -
-                        (sendModalSummary.sent + sendModalSummary.failed)
+                        (sendModalSummary.sent + sendModalSummary.failed),
                     )}
                   </span>
                 )}
@@ -1054,8 +973,8 @@ export default function PreviewPane({
                         Math.floor(
                           ((sendModalSummary.sent + sendModalSummary.failed) /
                             (sendModalTotal || 1)) *
-                            100
-                        )
+                            100,
+                        ),
                       )}%`,
                     }}
                   />
@@ -1143,8 +1062,8 @@ export default function PreviewPane({
                             (l.accepted?.length
                               ? `accepted: ${l.accepted.join(", ")}`
                               : l.rejected?.length
-                              ? `rejected: ${l.rejected.join(", ")}`
-                              : "")}
+                                ? `rejected: ${l.rejected.join(", ")}`
+                                : "")}
                         </td>
                       </tr>
                     ))}
